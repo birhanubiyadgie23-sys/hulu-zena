@@ -1,0 +1,38 @@
+name: Install HULU ZENA source
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".bootstrap/parts/**"
+      - ".github/workflows/install-source.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  install-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Reassemble and install source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .bootstrap/parts/*.txt > /tmp/hulu-zena-source.b64
+          base64 --decode /tmp/hulu-zena-source.b64 > /tmp/hulu-zena-source.tar.xz
+          echo "9633ed857807ad7ca4bb143aa9300084fe8afc5747cdcb828d29c64ea3287ab2  /tmp/hulu-zena-source.tar.xz" | sha256sum --check
+          xz --test /tmp/hulu-zena-source.tar.xz
+          tar -xJf /tmp/hulu-zena-source.tar.xz -C .
+          rm -rf .bootstrap
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          npm test
+          npm run build
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Install HULU ZENA source files"
+          git push origin main
