@@ -1,0 +1,23 @@
+{
+  "name": "hulu-zena-news",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "node scripts/build-project.js",
+    "check": "node scripts/check-project.js",
+    "hash-password": "node scripts/hash-password.js",
+    "test": "node scripts/test-auth.js && node scripts/check-project.js"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.0.1",
+    "rss-parser": "^3.13.0"
+  },
+  "devDependencies": {
+    "vercel": "^48.1.0"
+  }
+}
