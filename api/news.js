@@ -1,13 +1,119 @@
+import Parser from 'rss-parser';
 import { sqlClient } from './_lib/db.js';
 import { send, method } from './_lib/http.js';
+
+const parser = new Parser({
+  timeout: 12000,
+  headers: { 'User-Agent': 'HuluZenaNewsBot/1.0 (+RSS reader)' }
+});
+
+const FALLBACK_SOURCES = [
+  { name: 'VOA Amharic - Ethiopia', url: 'https://amharic.voanews.com/api/ztbgtl-vomx-tpekvbv', language: 'am', category: 'ethiopia' },
+  { name: 'VOA Amharic - World', url: 'https://amharic.voanews.com/api/ziibql-vomx-tpemgqqo', language: 'am', category: 'world' },
+  { name: 'VOA English - Africa', url: 'https://www.voanews.com/api/z-botl-vomx-tpertmq', language: 'en', category: 'world' },
+  { name: 'VOA English - United States', url: 'https://www.voanews.com/api/zqboml-vomx-tpeivmy', language: 'en', category: 'world' },
+  { name: 'VOA English - Economy and Business', url: 'https://www.voanews.com/api/zyboql-vomx-tpetvmi', language: 'en', category: 'economy' },
+  { name: 'VOA English - Technology', url: 'https://www.voanews.com/api/zyritl-vomx-tpettmq', language: 'en', category: 'technology' },
+  { name: 'VOA English - International Edition', url: 'https://www.voanews.com/api/zumgqol-vomx-tpeg--qi', language: 'en', category: 'world' }
+];
+
+function plain(value, max = 650) {
+  return String(value || '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, max);
+}
+
+function safeUrl(value) {
+  try {
+    const url = new URL(value);
+    return ['http:', 'https:'].includes(url.protocol) ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+function imageUrl(item) {
+  return safeUrl(item?.enclosure?.url || item?.['media:thumbnail']?.url || '');
+}
+
+function sendCached(res, data, cacheControl) {
+  res.statusCode = 200;
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Cache-Control', cacheControl);
+  res.end(JSON.stringify(data));
+}
+
+async function readFallbackFeeds({ category, language, limit }) {
+  const groups = await Promise.all(FALLBACK_SOURCES
+    .filter((source) => category === 'all' || source.category === category)
+    .filter((source) => language === 'all' || source.language === language)
+    .map(async (source) => {
+      try {
+        const feed = await parser.parseURL(source.url);
+        return (feed.items || []).slice(0, 25).map((item) => {
+          const title = plain(item.title, 250);
+          const originalUrl = safeUrl(item.link || item.guid || '');
+          if (!title || !originalUrl) return null;
+          const dateValue = item.isoDate || item.pubDate || null;
+          const publishedAt = dateValue && !Number.isNaN(Date.parse(dateValue))
+            ? new Date(dateValue).toISOString()
+            : null;
+          return {
+            id: originalUrl,
+            title,
+            summary: plain(item.contentSnippet || item.summary || item.content || item.description || '', 500),
+            original_url: originalUrl,
+            image_url: imageUrl(item),
+            category: source.category,
+            language: source.language,
+            published_at: publishedAt,
+            fetched_at: new Date().toISOString(),
+            source_name: source.name
+          };
+        }).filter(Boolean);
+      } catch {
+        return [];
+      }
+    }));
+
+  const unique = new Map();
+  for (const article of groups.flat()) {
+    if (!unique.has(article.original_url)) unique.set(article.original_url, article);
+  }
+
+  return [...unique.values()]
+    .sort((a, b) => Date.parse(b.published_at || b.fetched_at) - Date.parse(a.published_at || a.fetched_at))
+    .slice(0, limit);
+}
+
 export default async function handler(req, res) {
   if (!method(req, res, 'GET')) return;
+
+  const category = typeof req.query?.category === 'string' ? req.query.category.slice(0, 30) : 'all';
+  const limit = Math.min(60, Math.max(1, Number.parseInt(req.query?.limit || '30', 10) || 30));
+  const language = ['am', 'en'].includes(req.query?.language) ? req.query.language : 'all';
+
   try {
+    if (!process.env.DATABASE_URL) {
+      const articles = await readFallbackFeeds({ category, language, limit });
+      return sendCached(res, { ok: true, articles, mode: 'rss-fallback' }, 's-maxage=300, stale-while-revalidate=600');
+    }
+
     const sql = sqlClient();
-    const category = typeof req.query?.category === 'string' ? req.query.category.slice(0, 30) : 'all';
-    const limit = Math.min(60, Math.max(1, Number.parseInt(req.query?.limit || '30', 10) || 30));
-    const language = ['am', 'en'].includes(req.query?.language) ? req.query.language : 'all';
     const rows = await sql`SELECT a.id, a.title, a.summary, a.original_url, a.image_url, a.category, a.language, a.published_at, a.fetched_at, s.name AS source_name FROM news_articles a LEFT JOIN news_sources s ON s.id = a.source_id WHERE a.is_published = TRUE AND (${category} = 'all' OR a.category = ${category}) AND (${language} = 'all' OR a.language = ${language}) ORDER BY COALESCE(a.published_at, a.fetched_at) DESC LIMIT ${limit}`;
-    send(res, 200, { ok: true, articles: rows });
-  } catch (error) { send(res, 500, { ok: false, error: 'News service unavailable' }); }
+    return sendCached(res, { ok: true, articles: rows, mode: 'database' }, 's-maxage=120, stale-while-revalidate=300');
+  } catch {
+    try {
+      const articles = await readFallbackFeeds({ category, language, limit });
+      return sendCached(res, { ok: true, articles, mode: 'rss-fallback' }, 's-maxage=120, stale-while-revalidate=300');
+    } catch {
+      return send(res, 503, { ok: false, error: 'News feeds are temporarily unavailable' });
+    }
+  }
 }
