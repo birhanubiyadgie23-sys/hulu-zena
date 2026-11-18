@@ -36,3 +36,5 @@ jobs:
           git add -A
           git commit -m "Install HULU ZENA source files"
           git push origin main
+
+# Trigger a repository-content event so the installation job runs.
