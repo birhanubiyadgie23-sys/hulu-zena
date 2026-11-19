@@ -1,10 +1,10 @@
 import Parser from 'rss-parser';
-import { sqlClient } from './_lib/db.js';
+import { rawSqlClient } from './_lib/db.js';
 import { send, method } from './_lib/http.js';
 import { getImageUrl, getCategory } from './_lib/news-utils.js';
 
 const parser = new Parser({
-  timeout: 12000,
+  timeout: 6000,
   headers: { 'User-Agent': 'HuluZenaNewsBot/1.0 (+RSS reader)' },
   customFields: { item: ['media:content', 'media:thumbnail', 'content:encoded', 'itunes:image'] }
 });
@@ -14,15 +14,7 @@ const FALLBACK_CACHE_MS = 60_000;
 const INGEST_MAX_AGE_MS = 60 * 60 * 1000;
 
 async function parseFeedWithRetry(url) {
-  let lastError;
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try { return await parser.parseURL(url); }
-    catch (error) {
-      lastError = error;
-      if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 300));
-    }
-  }
-  throw lastError;
+  return parser.parseURL(url);
 }
 
 const FALLBACK_SOURCES = [
@@ -128,11 +120,20 @@ export default async function handler(req, res) {
   // Prefer stored stories so successfully imported articles remain visible for ten days.
   if (process.env.DATABASE_URL) {
     try {
-      const sql = sqlClient();
+      const sql = rawSqlClient();
+      if (req.query?.id) {
+        const id = Number(req.query.id);
+        if (!Number.isSafeInteger(id) || id < 1) return send(res, 400, { ok: false, error: 'Invalid article id' });
+        const rows = await sql`SELECT a.id, a.title, a.summary, a.original_url, a.image_url, a.category, a.language, a.published_at, a.fetched_at, s.name AS source_name FROM news_articles a LEFT JOIN news_sources s ON s.id = a.source_id WHERE a.id = ${id} AND a.is_published = TRUE LIMIT 1`;
+        if (!rows.length) return send(res, 404, { ok: false, error: 'Article not found' });
+        const related = await sql`SELECT id, title, image_url, category, published_at FROM news_articles WHERE is_published = TRUE AND category = ${rows[0].category} AND id <> ${id} ORDER BY published_at DESC LIMIT 4`;
+        return sendCached(res, { ok: true, article: rows[0], related }, 's-maxage=60, stale-while-revalidate=60');
+      }
       const rows = await sql`SELECT a.id, a.title, a.summary, a.original_url, a.image_url, a.category, a.language, a.published_at, a.fetched_at, s.name AS source_name FROM news_articles a LEFT JOIN news_sources s ON s.id = a.source_id WHERE a.is_published = TRUE AND (${category} = 'all' OR a.category = ${category}) AND (${language} = 'all' OR a.language = ${language}) AND COALESCE(a.published_at, a.fetched_at) >= NOW() - INTERVAL '10 days' ORDER BY COALESCE(a.published_at, a.fetched_at) DESC LIMIT ${limit}`;
       return sendCached(res, { ok: true, articles: rows, mode: 'database' }, 's-maxage=60, stale-while-revalidate=60');
-    } catch {
-      // If the database is temporarily unavailable, serve only newly published RSS items.
+    } catch (error) {
+      console.error('[api/news] Database read failed:', error?.message || error);
+      return send(res, 503, { ok: false, error: 'News database is temporarily unavailable. Please try again shortly.' });
     }
   }
 

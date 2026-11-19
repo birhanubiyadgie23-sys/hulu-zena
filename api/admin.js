@@ -1,4 +1,4 @@
-import { sqlClient } from './_lib/db.js';
+import { sqlClient, rawSqlClient } from './_lib/db.js';
 import { isIP } from 'node:net';
 import { lookup } from 'node:dns/promises';
 import { send, method, readBody, cleanText } from './_lib/http.js';
@@ -24,20 +24,58 @@ async function validateFeedUrl(value) {
   } catch { return false; }
 }
 export default async function handler(req, res) {
+  // Public site profile is read-only; contact submissions are stored for the admin inbox.
+  if (req.method === 'GET' && req.query?.public === '1') {
+    try {
+      const sql = rawSqlClient();
+      const rows = await sql`SELECT key, value FROM app_settings WHERE key LIKE 'site_%'`;
+      const profile = Object.fromEntries(rows.map(row => [row.key.replace(/^site_/, ''), row.value]));
+      return send(res, 200, { ok: true, profile });
+    } catch { return send(res, 200, { ok: true, profile: {} }); }
+  }
+  if (req.method === 'POST' && req.query?.contact === '1') {
+    try {
+      const body = readBody(req);
+      const name = cleanText(body.name, 100);
+      const email = cleanText(body.email, 200).toLowerCase();
+      const message = cleanText(body.message, 3000);
+      if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || message.length < 8) {
+        return send(res, 400, { ok: false, error: 'Please provide a name, valid email and a message of at least 8 characters.' });
+      }
+      const sql = sqlClient();
+      await sql`INSERT INTO contact_messages (name, email, message) VALUES (${name}, ${email}, ${message})`;
+      return send(res, 201, { ok: true });
+    } catch { return send(res, 500, { ok: false, error: 'Message could not be saved. Please try again later.' }); }
+  }
   if (req.method === 'POST' && req.url?.includes('logout')) { clearSession(res); return send(res, 200, { ok: true }); }
   if (!['GET', 'POST', 'PATCH', 'DELETE'].includes(req.method)) return method(req, res, 'GET, POST, PATCH, DELETE');
   const email = requireAdmin(req, res); if (!email) return;
   try {
     const sql = sqlClient();
     if (req.method === 'GET') {
-      const [sources, stats, runs] = await Promise.all([
+      const [sources, stats, runs, settings, messages] = await Promise.all([
         sql`SELECT id, name, feed_url, language, category, is_active, last_fetched_at, last_error FROM news_sources ORDER BY id`,
         sql`SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE is_published)::int AS published FROM news_articles`,
-        sql`SELECT id, started_at, finished_at, status, inserted_count, error_count FROM sync_runs ORDER BY id DESC LIMIT 8`
+        sql`SELECT id, started_at, finished_at, status, inserted_count, error_count FROM sync_runs ORDER BY id DESC LIMIT 8`,
+        sql`SELECT key, value FROM app_settings WHERE key LIKE 'site_%'`,
+        sql`SELECT id, name, email, message, created_at, is_read FROM contact_messages ORDER BY id DESC LIMIT 50`
       ]);
-      return send(res, 200, { ok: true, email, sources, stats: stats[0], runs });
+      const profile = Object.fromEntries(settings.map(row => [row.key.replace(/^site_/, ''), row.value]));
+      return send(res, 200, { ok: true, email, sources, stats: stats[0], runs, profile, messages });
     }
     const body = readBody(req);
+    if (req.method === 'POST' && req.query?.profile === '1') {
+      const fields = ['about_am', 'about_en', 'facebook', 'telegram', 'youtube', 'instagram', 'tiktok', 'contact_email'];
+      for (const field of fields) {
+        const value = cleanText(body[field], field.startsWith('about_') ? 2000 : 300);
+        if (['facebook','telegram','youtube','instagram','tiktok'].includes(field) && value) {
+          try { const url = new URL(value); if (url.protocol !== 'https:') return send(res, 400, { ok: false, error: 'Social links must use HTTPS.' }); }
+          catch { return send(res, 400, { ok: false, error: 'Please enter valid social links.' }); }
+        }
+        await sql`INSERT INTO app_settings (key, value) VALUES (${'site_' + field}, ${value}) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()`;
+      }
+      return send(res, 200, { ok: true });
+    }
     if (req.method === 'POST') {
       const name = cleanText(body.name, 100); const feedUrl = cleanText(body.feed_url, 500);
       if (!name || !(await validateFeedUrl(feedUrl))) return send(res, 400, { ok: false, error: 'A valid public HTTPS RSS feed URL is required' });

@@ -38,6 +38,14 @@ const schemaStatements = [
     value TEXT NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
+  `CREATE TABLE IF NOT EXISTS contact_messages (
+    id BIGSERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    message TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    is_read BOOLEAN NOT NULL DEFAULT FALSE
+  )`,
   `CREATE TABLE IF NOT EXISTS sync_runs (
     id BIGSERIAL PRIMARY KEY,
     started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -65,38 +73,45 @@ const schemaStatements = [
 ];
 
 async function initializeSchema(db) {
-  for (const statement of schemaStatements) {
-    await db.unsafe(statement);
-  }
+  // Create independent tables together, then indexes, then seed sources.
+  await Promise.all([0, 1, 5, 6, 7].map((index) => db.unsafe(schemaStatements[index])));
+  await Promise.all([2, 3, 4].map((index) => db.unsafe(schemaStatements[index])));
+  await db.unsafe(schemaStatements[8]);
 }
 
-export function sqlClient() {
+function getClient() {
   const connectionString = process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL;
-  if (!connectionString) {
-    throw new Error('DATABASE_URL_POOLED or DATABASE_URL is not configured');
-  }
-
+  if (!connectionString) throw new Error('DATABASE_URL_POOLED or DATABASE_URL is not configured');
   if (!client) {
     client = postgres(connectionString, {
-      max: 1,
-      idle_timeout: 20,
-      connect_timeout: 10,
+      max: 3,
+      idle_timeout: 10,
+      connect_timeout: 5,
+      query_timeout: 8000,
       prepare: false
     });
   }
+  return client;
+}
 
+// Direct reads skip cold-start schema DDL. Use only for routes that read existing tables.
+export function rawSqlClient() {
+  return getClient();
+}
+
+export function sqlClient() {
+  const db = getClient();
   if (!query) {
     query = async (strings, ...values) => {
       if (!schemaReady) {
-        schemaReady = initializeSchema(client).catch((error) => {
+        schemaReady = initializeSchema(db).catch((error) => {
           schemaReady = null;
           throw error;
         });
       }
       await schemaReady;
-      return client(strings, ...values);
+      return db(strings, ...values);
     };
   }
-
   return query;
 }
