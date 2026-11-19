@@ -13,9 +13,9 @@ function imageCandidates(item = {}) {
     if (typeof value === 'string') return values.push(value);
     if (typeof value === 'object') add(value.url || value.href || value.src || value.$?.url || value.$?.href);
   };
+  add(item['media:content']);
   add(item.enclosure);
   add(item['media:thumbnail']);
-  add(item['media:content']);
   add(item.image);
   add(item.itunes?.image);
   add(item['itunes:image']);
@@ -30,8 +30,22 @@ function imageCandidates(item = {}) {
   return values.map(safeUrl).filter(Boolean);
 }
 
+function upgradeImageUrl(value) {
+  const safe = safeUrl(value);
+  if (!safe) return null;
+  try {
+    const url = new URL(safe);
+    // The Guardian RSS feed often supplies a 140px thumbnail.
+    if (url.hostname === 'i.guim.co.uk' && url.searchParams.has('width')) {
+      url.searchParams.set('width', '1200');
+      url.searchParams.set('quality', '90');
+    }
+    return url.toString();
+  } catch { return safe; }
+}
+
 export function getImageUrl(item) {
-  return imageCandidates(item)[0] || null;
+  return imageCandidates(item).map(upgradeImageUrl).find(Boolean) || null;
 }
 
 export function getCategory(item, fallback = 'world') {
