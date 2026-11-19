@@ -16,7 +16,7 @@ export async function syncFeeds() {
   const feedResults = await Promise.all(sources.map(async (source) => {
     try {
       const feed = await parser.parseURL(source.feed_url);
-      const items = (feed.items || []).slice(0, 30).map((item) => {
+      const items = (feed.items || []).slice(0, 50).map((item) => {
         const title = plain(item.title);
         const url = safeUrl(item.link || item.guid);
         if (!title || !url) return null;
@@ -25,7 +25,7 @@ export async function syncFeeds() {
           sourceId: source.id,
           sourceName: source.name,
           title,
-          summary: plain(item.contentSnippet || item.summary || item.content || item.description || ''),
+          summary: plain(item.contentSnippet || item.summary || item.content || item.description || '').slice(0, 220),
           url,
           category: source.category,
           language: source.language,
@@ -33,7 +33,11 @@ export async function syncFeeds() {
           image: safeUrl(item.enclosure?.url || item['media:thumbnail']?.url || item['media:content']?.url || ''),
           fingerprint: fingerprint(title)
         };
-      }).filter(Boolean);
+      }).filter((item) => {
+        if (!item || !item.published) return false;
+        const publishedMs = Date.parse(item.published);
+        return publishedMs >= Date.now() - 60 * 60 * 1000 && publishedMs <= Date.now() + 5 * 60 * 1000;
+      });
       return { source, items, error: null };
     } catch (error) {
       return { source, items: [], error: String(error?.message || 'Feed error').slice(0, 300) };
