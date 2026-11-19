@@ -63,6 +63,18 @@ export default async function handler(req, res) {
       const profile = Object.fromEntries(settings.map(row => [row.key.replace(/^site_/, ''), row.value]));\n      return send(res, 200, { ok: true, email, sources, stats: stats[0], runs, profile, messages });
     }
     const body = readBody(req);
+    if (req.method === 'POST' && req.query?.profile === '1') {
+      const fields = ['about_am', 'about_en', 'facebook', 'telegram', 'youtube', 'instagram', 'tiktok', 'contact_email'];
+      for (const field of fields) {
+        const value = cleanText(body[field], field.startsWith('about_') ? 2000 : 300);
+        if (['facebook','telegram','youtube','instagram','tiktok'].includes(field) && value) {
+          try { const url = new URL(value); if (url.protocol !== 'https:') return send(res, 400, { ok: false, error: 'Social links must use HTTPS.' }); }
+          catch { return send(res, 400, { ok: false, error: 'Please enter valid social links.' }); }
+        }
+        await sql`INSERT INTO app_settings (key, value) VALUES (${'site_' + field}, ${value}) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()`;
+      }
+      return send(res, 200, { ok: true });
+    }
     if (req.method === 'POST') {
       const name = cleanText(body.name, 100); const feedUrl = cleanText(body.feed_url, 500);
       if (!name || !(await validateFeedUrl(feedUrl))) return send(res, 400, { ok: false, error: 'A valid public HTTPS RSS feed URL is required' });
