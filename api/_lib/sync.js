@@ -7,7 +7,7 @@ const safeUrl = (value) => {
   try { const url = new URL(value); return ['http:', 'https:'].includes(url.protocol) ? url.toString() : null; }
   catch { return null; }
 };
-const plain = (value) => String(value || '').replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim().slice(0, 650);
+const plain = (value) => String(value || '').replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim().slice(0, 220);
 const fingerprint = (title) => createHash('sha256').update(plain(title).toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ')).digest('hex');
 
 export async function syncFeeds() {
@@ -78,6 +78,7 @@ export async function syncFeeds() {
   await Promise.all(feedResults.map(async ({ source, error }) => {
     await sql`UPDATE news_sources SET last_fetched_at = NOW(), last_error = ${error} WHERE id = ${source.id}`;
   }));
+  const deleted = await sql`DELETE FROM news_articles WHERE COALESCE(published_at, fetched_at) < NOW() - INTERVAL '10 days'`;
   const inserted = details.reduce((sum, entry) => sum + entry.inserted, 0);
-  return { inserted, errors, details: details.map(({ sourceId, ...detail }) => detail) };
+  return { inserted, deleted: deleted.count || 0, errors, details: details.map(({ sourceId, ...detail }) => detail) };
 }
