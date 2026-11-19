@@ -11,9 +11,7 @@ function imageCandidates(item = {}) {
     if (!value) return;
     if (Array.isArray(value)) return value.forEach(add);
     if (typeof value === 'string') return values.push(value);
-    if (typeof value === 'object') {
-      add(value.url || value.href || value.src || value.$?.url || value.$?.href);
-    }
+    if (typeof value === 'object') add(value.url || value.href || value.src || value.$?.url || value.$?.href);
   };
   add(item.enclosure);
   add(item['media:thumbnail']);
@@ -23,9 +21,9 @@ function imageCandidates(item = {}) {
   add(item['itunes:image']);
   for (const field of ['content:encoded', 'content', 'description', 'summary']) {
     const html = typeof item[field] === 'string' ? item[field] : '';
-    const matches = html.match(/<img\\b[^>]*\\bsrc\\s*=\\s*["']([^"']+)["']/gi) || [];
+    const matches = html.match(/<img\b[^>]*\bsrc\s*=\s*["']([^"']+)["']/gi) || [];
     for (const match of matches) {
-      const src = match.match(/\\bsrc\\s*=\\s*["']([^"']+)["']/i)?.[1];
+      const src = match.match(/\bsrc\s*=\s*["']([^"']+)["']/i)?.[1];
       if (src) values.push(src);
     }
   }
@@ -41,15 +39,13 @@ export function getCategory(item, fallback = 'world') {
     .filter(Boolean).join(' ').replace(/<[^>]*>/g, ' ').toLocaleLowerCase();
 
   const rules = [
-    ['politics', /\\b(election|president|prime minister|parliament|government|minister|politic|vote|campaign|diplomat|sanction|የምርጫ|ምርጫ|ፕሬዚዳንት|ጠቅላይ ሚኒስትር|ፓርላማ|መንግስት|ፖለቲካ|ዲፕሎማሲ)\\b/i],
-    ['technology', /\\b(technology|tech|artificial intelligence|\\bAI\\b|software|cyber|digital|smartphone|robot|ቴክኖሎጂ|ሰው ሰራሽ አስተውሎት|ዲጂታል)\\b/i],
-    ['sports', /\\b(sport|football|soccer|basketball|tennis|olympic|cricket|league|match|player|team|ስፖርት|እግር ኳስ|ቅርጫት ኳስ|ጨዋታ)\\b/i],
-    ['business', /\\b(business|company|companies|market|trade|retail|industry|startup|corporate|ቢዝነስ|ንግድ|ኩባንያ|ገበያ|ኢንዱስትሪ)\\b/i],
-    ['economy', /\\b(economy|economic|inflation|bank|currency|finance|financial|GDP|jobs|unemployment|interest rate|budget|ኢኮኖሚ|ዋጋ ንረት|ባንክ|ምንዛሬ|ፋይናንስ|በጀት)\\b/i],
-    ['ethiopia', /\\b(ethiopia|ethiopian|addis ababa|amhara|oromia|tigray|somali region|afar|ኢትዮጵያ|ኢትዮጵያዊ|አዲስ አበባ|አማራ|ኦሮሚያ|ትግራይ|ሶማሌ|አፋር)\\b/i]
+    ['politics', /\b(election|president|prime minister|parliament|government|minister|politic|vote|campaign|diplomat|sanction)\b|የምርጫ|ምርጫ|ፕሬዚዳንት|ጠቅላይ ሚኒስትር|ፓርላማ|መንግስት|ፖለቲካ|ዲፕሎማሲ/i],
+    ['technology', /\b(technology|tech|artificial intelligence|AI|software|cyber|digital|smartphone|robot)\b|ቴክኖሎጂ|ሰው ሰራሽ አስተውሎት|ዲጂታል/i],
+    ['sports', /\b(sport|football|soccer|basketball|tennis|olympic|cricket|league|match|player|team)\b|ስፖርት|እግር ኳስ|ቅርጫት ኳስ|ጨዋታ/i],
+    ['business', /\b(business|company|companies|market|trade|retail|industry|startup|corporate)\b|ቢዝነስ|ንግድ|ኩባንያ|ገበያ|ኢንዱስትሪ/i],
+    ['economy', /\b(economy|economic|inflation|bank|currency|finance|financial|GDP|jobs|unemployment|interest rate|budget)\b|ኢኮኖሚ|ዋጋ ንረት|ባንክ|ምንዛሬ|ፋይናንስ|በጀት/i],
+    ['ethiopia', /\b(ethiopia|ethiopian|addis ababa|amhara|oromia|tigray|somali region|afar)\b|ኢትዮጵያ|ኢትዮጵያዊ|አዲስ አበባ|አማራ|ኦሮሚያ|ትግራይ|ሶማሌ|አፋር/i]
   ];
-  for (const [category, pattern] of rules) {
-    if (pattern.test(text)) return category;
-  }
+  for (const [category, pattern] of rules) if (pattern.test(text)) return category;
   return ['ethiopia','world','politics','business','technology','sports','economy'].includes(fallback) ? fallback : 'world';
 }
