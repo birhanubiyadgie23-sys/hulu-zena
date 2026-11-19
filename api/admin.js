@@ -60,7 +60,8 @@ export default async function handler(req, res) {
         sql`SELECT key, value FROM app_settings WHERE key LIKE 'site_%'`,
         sql`SELECT id, name, email, message, created_at, is_read FROM contact_messages ORDER BY id DESC LIMIT 50`
       ]);
-      const profile = Object.fromEntries(settings.map(row => [row.key.replace(/^site_/, ''), row.value]));\n      return send(res, 200, { ok: true, email, sources, stats: stats[0], runs, profile, messages });
+      const profile = Object.fromEntries(settings.map(row => [row.key.replace(/^site_/, ''), row.value]));
+      return send(res, 200, { ok: true, email, sources, stats: stats[0], runs, profile, messages });
     }
     const body = readBody(req);
     if (req.method === 'POST' && req.query?.profile === '1') {
