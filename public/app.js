@@ -42,4 +42,4 @@ $('#sourceForm').addEventListener('submit',async e=>{e.preventDefault();const f=
 $('#sourceList').addEventListener('click',async e=>{const t=e.target.closest('[data-toggle]'),d=e.target.closest('[data-delete]');try{if(t)await api(`/api/admin?id=${t.dataset.toggle}`,{method:'PATCH',body:JSON.stringify({is_active:t.dataset.active!=='true'})});if(d&&confirm('ይህን ምንጭ ማጥፋት ይፈልጋሉ?'))await api(`/api/admin?id=${d.dataset.delete}`,{method:'DELETE'});checkAdmin();}catch(err){alert(err.message);}});
 $('#articleList').addEventListener('click',async e=>{const b=e.target.closest('[data-article-toggle]');if(!b)return;try{await api(`/api/admin-articles?id=${b.dataset.articleToggle}`,{method:'PATCH',body:JSON.stringify({is_published:b.dataset.published!=='true'})});checkAdmin();}catch(err){alert(err.message);}});
 $('#logout').addEventListener('click',async()=>{try{await api('/api/admin?logout=1',{method:'POST',body:'{}'});}catch{}checkAdmin();});
-if(localStorage.getItem('hulu-zena-language') === 'en') $('#languageToggle').click(); else loadNews(); loadSiteProfile();
+if(localStorage.getItem('hulu-zena-language') === 'en') $('#languageToggle').click(); else loadNews(); 
