@@ -39,7 +39,7 @@ export default async function handler(req, res) {
       const name = cleanText(body.name, 100);
       const email = cleanText(body.email, 200).toLowerCase();
       const message = cleanText(body.message, 3000);
-      if (!name || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) || message.length < 8) {
+      if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || message.length < 8) {
         return send(res, 400, { ok: false, error: 'Please provide a name, valid email and a message of at least 8 characters.' });
       }
       const sql = sqlClient();
