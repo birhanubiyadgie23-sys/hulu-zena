@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { sqlClient } from './db.js';
 import { getImageUrl, getCategory } from './news-utils.js';
 
-const parser = new Parser({ timeout: 12000, headers: { 'User-Agent': 'HuluZenaNewsBot/1.0 (+RSS reader; contact site administrator)' } });
+const parser = new Parser({ timeout: 12000, headers: { 'User-Agent': 'HuluZenaNewsBot/1.0 (+RSS reader; contact site administrator)' }, customFields: { item: ['media:content', 'media:thumbnail', 'content:encoded', 'itunes:image'] } });
 const safeUrl = (value) => {
   try { const url = new URL(value); return ['http:', 'https:'].includes(url.protocol) ? url.toString() : null; }
   catch { return null; }
