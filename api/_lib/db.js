@@ -73,9 +73,10 @@ const schemaStatements = [
 ];
 
 async function initializeSchema(db) {
-  for (const statement of schemaStatements) {
-    await db.unsafe(statement);
-  }
+  // Create independent tables together, then indexes, then seed sources.
+  await Promise.all([0, 1, 5, 6, 7].map((index) => db.unsafe(schemaStatements[index])));
+  await Promise.all([2, 3, 4].map((index) => db.unsafe(schemaStatements[index])));
+  await db.unsafe(schemaStatements[8]);
 }
 
 export function sqlClient() {
@@ -89,7 +90,7 @@ export function sqlClient() {
       max: 3,
       idle_timeout: 10,
       connect_timeout: 5,
-      query_timeout: 12000,
+      query_timeout: 8000,
       prepare: false
     });
   }

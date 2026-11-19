@@ -131,8 +131,9 @@ export default async function handler(req, res) {
       }
       const rows = await sql`SELECT a.id, a.title, a.summary, a.original_url, a.image_url, a.category, a.language, a.published_at, a.fetched_at, s.name AS source_name FROM news_articles a LEFT JOIN news_sources s ON s.id = a.source_id WHERE a.is_published = TRUE AND (${category} = 'all' OR a.category = ${category}) AND (${language} = 'all' OR a.language = ${language}) AND COALESCE(a.published_at, a.fetched_at) >= NOW() - INTERVAL '10 days' ORDER BY COALESCE(a.published_at, a.fetched_at) DESC LIMIT ${limit}`;
       return sendCached(res, { ok: true, articles: rows, mode: 'database' }, 's-maxage=60, stale-while-revalidate=60');
-    } catch {
-      // If the database is temporarily unavailable, serve only newly published RSS items.
+    } catch (error) {
+      console.error('[api/news] Database read failed:', error?.message || error);
+      return send(res, 503, { ok: false, error: 'News database is temporarily unavailable. Please try again shortly.' });
     }
   }
 
