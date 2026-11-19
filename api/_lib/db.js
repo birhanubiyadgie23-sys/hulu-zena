@@ -80,7 +80,8 @@ export function sqlClient() {
     client = postgres(connectionString, {
       max: 1,
       idle_timeout: 20,
-      connect_timeout: 10,
+      connect_timeout: 5,
+      query_timeout: 12000,
       prepare: false
     });
   }
