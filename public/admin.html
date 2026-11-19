@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="am">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#092653"><title>Admin Dashboard | HULU ZENA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Ethiopic:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/admin.css">
+</head>
+<body>
+<div class="admin-shell">
+<aside class="sidebar" id="sidebar">
+  <a class="brand" href="/"><span class="brand-globe">🌐</span><span><b>HULU ZENA</b><small>NEWS ADMIN PANEL</small></span></a>
+  <div class="side-label">WORKSPACE</div>
+  <nav class="side-nav">
+    <button class="nav-link active" data-view="overview"><span>▦</span> Dashboard</button>
+    <button class="nav-link" data-view="articles"><span>▤</span> News Management</button>
+    <button class="nav-link" data-view="categories"><span>☷</span> Categories</button>
+    <button class="nav-link" data-view="sources"><span>◉</span> News Sources</button>
+    <button class="nav-link" data-view="messages"><span>✉</span> Contact Messages <i id="messageCount">0</i></button>
+    <button class="nav-link" data-view="analytics"><span>▥</span> Analytics & Sync</button>
+    <button class="nav-link" data-view="settings"><span>⚙</span> Site Settings</button>
+  </nav>
+  <div class="sidebar-bottom">
+    <div class="ethiopia-card"><div class="flag">🇪🇹</div><b>Inform. Educate. Inspire.</b><span>HULU ZENA</span></div>
+    <a class="nav-link home-link" href="/"><span>↗</span> View Website</a>
+    <button class="nav-link logout" id="logout"><span>⇥</span> Sign Out</button>
+  </div>
+</aside>
+<main class="main-area">
+<header class="topbar">
+  <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
+  <label class="global-search"><span>⌕</span><input id="globalSearch" placeholder="Search articles, sources..."></label>
+  <div class="top-actions"><span class="online"><i></i> Online</span><button class="icon-btn" title="Notifications">♧<em>•</em></button><div class="admin-user"><span class="avatar">HZ</span><span><b id="adminEmail">Admin</b><small>Administrator</small></span></div></div>
+</header>
+<div class="content">
+  <section class="view active" id="view-overview">
+    <div class="welcome-row"><div><span class="eyebrow">HULU ZENA CONTROL CENTER</span><h1>Welcome back, Admin <span>✦</span></h1><p>Here’s what’s happening with your news portal today.</p></div><div class="today" id="todayText"></div></div>
+    <div class="metric-grid">
+      <article class="metric blue"><div class="metric-icon">▤</div><span>Total News</span><strong id="metricTotal">—</strong><small>All articles in database</small><b class="spark">⌁</b></article>
+      <article class="metric green"><div class="metric-icon">✓</div><span>Published News</span><strong id="metricPublished">—</strong><small>Visible on the website</small><b class="spark">⌁</b></article>
+      <article class="metric orange"><div class="metric-icon">◉</div><span>Active Sources</span><strong id="metricSources">—</strong><small>Connected RSS feeds</small><b class="spark">⌁</b></article>
+      <article class="metric violet"><div class="metric-icon">↻</div><span>Last Sync Added</span><strong id="metricAdded">—</strong><small>Articles in latest sync</small><b class="spark">⌁</b></article>
+    </div>
+    <div class="overview-grid">
+      <article class="panel analytics-panel"><div class="panel-head"><div><h2>▥ &nbsp;Publishing Activity</h2><p>Recent news synchronization history</p></div><button class="soft-btn" data-go="analytics">View details ↗</button></div><div class="chart-wrap"><svg id="syncChart" viewBox="0 0 700 220" role="img" aria-label="Recent synchronization activity"><line x1="48" y1="25" x2="680" y2="25"/><line x1="48" y1="80" x2="680" y2="80"/><line x1="48" y1="135" x2="680" y2="135"/><line x1="48" y1="190" x2="680" y2="190"/><text x="8" y="29">max</text><text x="12" y="194">0</text><polyline id="chartLine" points="48,190 680,190"/><g id="chartDots"></g><g id="chartLabels"></g></svg></div><div class="chart-legend"><span><i></i> Articles added per sync</span><span class="chart-note">Based on recorded sync runs</span></div></article>
+      <article class="panel activity-panel"><div class="panel-head"><div><h2>⚡ &nbsp;Recent Activities</h2><p>Latest system events</p></div><button class="text-link" data-go="analytics">View all →</button></div><div id="recentActivity" class="activity-list"><div class="empty-row">Loading activity…</div></div></article>
+    </div>
+    <div class="lower-grid">
+      <article class="panel table-panel"><div class="panel-head"><div><h2>▤ &nbsp;Manage News Articles</h2><p>Review and control published stories</p></div><button class="primary-btn" data-go="articles">Manage Articles ↗</button></div><div class="table-scroll"><table><thead><tr><th>#</th><th>Title</th><th>Category</th><th>Language</th><th>Status</th><th>Action</th></tr></thead><tbody id="recentArticles"><tr><td colspan="6" class="empty-row">Loading articles…</td></tr></tbody></table></div></article>
+      <article class="panel quick-panel"><div class="panel-head"><div><h2>🚀 &nbsp;Quick Actions</h2><p>Common admin tasks</p></div></div><button class="quick-action qa-blue" data-go="articles">▤ &nbsp; Manage News Articles</button><button class="quick-action qa-green" data-go="categories">☷ &nbsp; Browse Categories</button><button class="quick-action qa-orange" data-go="analytics">▥ &nbsp; View Sync Analytics</button><button class="quick-action qa-purple" data-go="settings">⚙ &nbsp; Site Settings</button><button class="quick-action qa-dark" id="quickSync">↻ &nbsp; Sync News Now</button></article>
+    </div>
+  </section>
+  <section class="view" id="view-articles"><div class="page-heading"><div><span class="eyebrow">CONTENT WORKSPACE</span><h1>News Management</h1><p>Review, publish or hide stories from your news portal.</p></div><button class="primary-btn" id="refreshArticles">↻ Refresh List</button></div><article class="panel"><div class="filter-row"><input id="articleSearch" placeholder="Search article title..."><select id="articleStatus"><option value="all">All statuses</option><option value="published">Published</option><option value="hidden">Hidden</option></select><select id="articleCategory"><option value="all">All categories</option></select></div><div class="table-scroll"><table><thead><tr><th>Title</th><th>Category</th><th>Language</th><th>Published</th><th>Actions</th></tr></thead><tbody id="articleTable"></tbody></table></div></article></section>
+  <section class="view" id="view-categories"><div class="page-heading"><div><span class="eyebrow">CONTENT ORGANIZATION</span><h1>News Categories</h1><p>Categories currently used by your news articles.</p></div></div><div class="category-grid" id="categoryGrid"></div></section>
+  <section class="view" id="view-sources"><div class="page-heading"><div><span class="eyebrow">RSS CONNECTIONS</span><h1>News Sources</h1><p>Manage the RSS feeds that supply your news portal.</p></div><button class="primary-btn" id="openSourceForm">＋ Add Source</button></div><article class="panel"><div id="sourceList" class="source-list"></div></article><article class="panel form-panel" id="sourceFormPanel"><h2>Add a news source</h2><form id="sourceForm" class="form-grid"><label>Source name<input name="name" required maxlength="100" placeholder="Publisher name"></label><label>RSS feed URL<input name="feed_url" type="url" required placeholder="https://example.com/rss"></label><label>Language<select name="language"><option value="am">Amharic</option><option value="en">English</option></select></label><label>Category<select name="category"><option value="ethiopia">Ethiopia</option><option value="world">World</option><option value="politics">Politics</option><option value="business">Business</option><option value="technology">Technology</option><option value="sports">Sports</option><option value="economy">Economy</option></select></label><button class="primary-btn" type="submit">Save News Source</button><p id="sourceMessage" class="form-message"></p></form></article></section>
+  <section class="view" id="view-messages"><div class="page-heading"><div><span class="eyebrow">INBOX</span><h1>Contact Messages</h1><p>Messages submitted through the public contact page.</p></div><button class="soft-btn" id="refreshMessages">↻ Refresh</button></div><div class="message-grid" id="messageList"></div></section>
+  <section class="view" id="view-analytics"><div class="page-heading"><div><span class="eyebrow">SYSTEM PERFORMANCE</span><h1>Analytics & Sync Logs</h1><p>Track the RSS sync jobs recorded by your website.</p></div><button class="primary-btn" id="syncNow">↻ Sync News Now</button></div><div class="metric-grid compact"><article class="metric blue"><span>Total Sync Runs</span><strong id="syncCount">—</strong><small>Recorded jobs</small></article><article class="metric green"><span>Articles Added</span><strong id="syncTotalAdded">—</strong><small>Across displayed runs</small></article><article class="metric orange"><span>Sync Errors</span><strong id="syncErrors">—</strong><small>Across displayed runs</small></article><article class="metric violet"><span>Last Run</span><strong class="last-run" id="lastRunStatus">—</strong><small id="lastRunTime">No sync history</small></article></div><article class="panel"><div class="panel-head"><div><h2>Synchronization History</h2><p>Most recent eight recorded runs</p></div></div><div id="syncHistory" class="sync-history"></div></article></section>
+  <section class="view" id="view-settings"><div class="page-heading"><div><span class="eyebrow">PORTAL CONFIGURATION</span><h1>Site Settings</h1><p>Update the public About page and social links.</p></div></div><article class="panel settings-panel"><form id="profileForm" class="form-grid"><label class="wide">About Us — Amharic<textarea name="about_am" rows="4" placeholder="ስለ ሁሉ ዜና..."></textarea></label><label class="wide">About Us — English<textarea name="about_en" rows="4" placeholder="About HULU ZENA..."></textarea></label><label>Contact Email<input name="contact_email" type="email" placeholder="news@example.com"></label><label>Facebook URL<input name="facebook" type="url" placeholder="https://facebook.com/..."></label><label>Telegram URL<input name="telegram" type="url" placeholder="https://t.me/..."></label><label>YouTube URL<input name="youtube" type="url" placeholder="https://youtube.com/..."></label><label>Instagram URL<input name="instagram" type="url" placeholder="https://instagram.com/..."></label><label>TikTok URL<input name="tiktok" type="url" placeholder="https://tiktok.com/..."></label><div class="wide form-actions"><button class="primary-btn" type="submit">Save Website Settings</button><span id="profileMessage" class="form-message"></span></div></form></article></section>
+  <div class="toast" id="toast" role="status"></div>
+</div>
+</main>
+</div>
+<div class="login-screen hidden" id="loginScreen"><form class="login-card" id="loginForm"><a class="brand login-brand" href="/"><span class="brand-globe">🌐</span><span><b>HULU ZENA</b><small>SECURE ADMIN ACCESS</small></span></a><h1>Welcome back</h1><p>Sign in to manage your news portal.</p><label>Email address<input name="email" type="email" required autocomplete="username" placeholder="admin@example.com"></label><label>Password<input name="password" type="password" required autocomplete="current-password" placeholder="Enter your password"></label><button class="primary-btn" type="submit">Sign In to Dashboard</button><p class="login-error" id="loginError"></p><a class="back-home" href="/">← Back to website</a></form></div>
+<script src="/admin.js" defer></script>
+</body></html>
