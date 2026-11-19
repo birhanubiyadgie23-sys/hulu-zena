@@ -1,9 +1,6 @@
 name: Hourly News Sync
 
 on:
-  push:
-    branches:
-      - main
   schedule:
     - cron: "0 * * * *"
   workflow_dispatch:
@@ -29,7 +26,6 @@ jobs:
             exit 1
           fi
           curl --fail --show-error --silent \
-            --retry 3 --retry-delay 10 \
             --max-time 90 \
             -H "Authorization: Bearer $CRON_SECRET" \
             "$SITE_URL/api/cron-sync"
