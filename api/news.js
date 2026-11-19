@@ -7,6 +7,21 @@ const parser = new Parser({
   headers: { 'User-Agent': 'HuluZenaNewsBot/1.0 (+RSS reader)' }
 });
 
+const fallbackCache = new Map();
+const FALLBACK_CACHE_MS = 60_000;
+
+async function parseFeedWithRetry(url) {
+  let lastError;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try { return await parser.parseURL(url); }
+    catch (error) {
+      lastError = error;
+      if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+  }
+  throw lastError;
+}
+
 const FALLBACK_SOURCES = [
   { name: 'VOA Amharic - Ethiopia', url: 'https://amharic.voanews.com/api/ztbgtl-vomx-tpekvbv', language: 'am', category: 'ethiopia' },
   { name: 'VOA Amharic - World', url: 'https://amharic.voanews.com/api/ziibql-vomx-tpemgqqo', language: 'am', category: 'world' },
@@ -55,12 +70,16 @@ function sendCached(res, data, cacheControl) {
 }
 
 async function readFallbackFeeds({ category, language, limit }) {
+  const cacheKey = `${category}:${language}`;
+  const cached = fallbackCache.get(cacheKey);
+  if (cached && Date.now() - cached.cachedAt < FALLBACK_CACHE_MS) return cached.articles.slice(0, limit);
+
   const groups = await Promise.all(FALLBACK_SOURCES
     .filter((source) => category === 'all' || source.category === category)
     .filter((source) => language === 'all' || source.language === language)
     .map(async (source) => {
       try {
-        const feed = await parser.parseURL(source.url);
+        const feed = await parseFeedWithRetry(source.url);
         return (feed.items || []).slice(0, 25).map((item) => {
           const title = plain(item.title, 250);
           const originalUrl = safeUrl(item.link || item.guid || '');
@@ -93,10 +112,11 @@ async function readFallbackFeeds({ category, language, limit }) {
   }
 
   const recentCutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
-  return [...unique.values()]
+  const articles = [...unique.values()]
     .filter((article) => !article.published_at || Date.parse(article.published_at) >= recentCutoff)
-    .sort((a, b) => Date.parse(b.published_at || b.fetched_at) - Date.parse(a.published_at || a.fetched_at))
-    .slice(0, limit);
+    .sort((a, b) => Date.parse(b.published_at || b.fetched_at) - Date.parse(a.published_at || a.fetched_at));
+  if (articles.length) fallbackCache.set(cacheKey, { cachedAt: Date.now(), articles });
+  return articles.slice(0, limit);
 }
 
 export default async function handler(req, res) {
