@@ -1,6 +1,7 @@
 import Parser from 'rss-parser';
 import { createHash } from 'node:crypto';
 import { sqlClient } from './db.js';
+import { getImageUrl, getCategory } from './news-utils.js';
 
 const parser = new Parser({ timeout: 12000, headers: { 'User-Agent': 'HuluZenaNewsBot/1.0 (+RSS reader; contact site administrator)' } });
 const safeUrl = (value) => {
@@ -27,10 +28,10 @@ export async function syncFeeds() {
           title,
           summary: plain(item.contentSnippet || item.summary || item.content || item.description || '').slice(0, 220),
           url,
-          category: source.category,
+          category: getCategory(item, source.category),
           language: source.language,
           published: published && !Number.isNaN(Date.parse(published)) ? new Date(published).toISOString() : null,
-          image: safeUrl(item.enclosure?.url || item['media:thumbnail']?.url || item['media:content']?.url || ''),
+          image: getImageUrl(item),
           fingerprint: fingerprint(title)
         };
       }).filter((item) => {
@@ -62,6 +63,7 @@ export async function syncFeeds() {
     const batch = candidates.slice(offset, offset + 10);
     const outcomes = await Promise.all(batch.map(async (item) => {
       try {
+        await sql`UPDATE news_articles SET image_url = COALESCE(image_url, ${item.image}), category = ${item.category} WHERE original_url = ${item.url}`;
         const result = await sql`
           INSERT INTO news_articles (source_id, title, summary, original_url, image_url, category, language, published_at, fingerprint)
           SELECT ${item.sourceId}, ${item.title}, ${item.summary}, ${item.url}, ${item.image}, ${item.category}, ${item.language}, ${item.published}, ${item.fingerprint}
