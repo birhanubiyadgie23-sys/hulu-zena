@@ -1,5 +1,5 @@
 import Parser from 'rss-parser';
-import { sqlClient } from './_lib/db.js';
+import { rawSqlClient } from './_lib/db.js';
 import { send, method } from './_lib/http.js';
 import { getImageUrl, getCategory } from './_lib/news-utils.js';
 
@@ -120,7 +120,7 @@ export default async function handler(req, res) {
   // Prefer stored stories so successfully imported articles remain visible for ten days.
   if (process.env.DATABASE_URL) {
     try {
-      const sql = sqlClient();
+      const sql = rawSqlClient();
       if (req.query?.id) {
         const id = Number(req.query.id);
         if (!Number.isSafeInteger(id) || id < 1) return send(res, 400, { ok: false, error: 'Invalid article id' });

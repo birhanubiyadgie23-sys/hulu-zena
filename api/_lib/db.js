@@ -79,12 +79,9 @@ async function initializeSchema(db) {
   await db.unsafe(schemaStatements[8]);
 }
 
-export function sqlClient() {
+function getClient() {
   const connectionString = process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL;
-  if (!connectionString) {
-    throw new Error('DATABASE_URL_POOLED or DATABASE_URL is not configured');
-  }
-
+  if (!connectionString) throw new Error('DATABASE_URL_POOLED or DATABASE_URL is not configured');
   if (!client) {
     client = postgres(connectionString, {
       max: 3,
@@ -94,19 +91,27 @@ export function sqlClient() {
       prepare: false
     });
   }
+  return client;
+}
 
+// Direct reads skip cold-start schema DDL. Use only for routes that read existing tables.
+export function rawSqlClient() {
+  return getClient();
+}
+
+export function sqlClient() {
+  const db = getClient();
   if (!query) {
     query = async (strings, ...values) => {
       if (!schemaReady) {
-        schemaReady = initializeSchema(client).catch((error) => {
+        schemaReady = initializeSchema(db).catch((error) => {
           schemaReady = null;
           throw error;
         });
       }
       await schemaReady;
-      return client(strings, ...values);
+      return db(strings, ...values);
     };
   }
-
   return query;
 }

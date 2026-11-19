@@ -1,4 +1,4 @@
-import { sqlClient } from './_lib/db.js';
+import { sqlClient, rawSqlClient } from './_lib/db.js';
 import { isIP } from 'node:net';
 import { lookup } from 'node:dns/promises';
 import { send, method, readBody, cleanText } from './_lib/http.js';
@@ -27,7 +27,7 @@ export default async function handler(req, res) {
   // Public site profile is read-only; contact submissions are stored for the admin inbox.
   if (req.method === 'GET' && req.query?.public === '1') {
     try {
-      const sql = sqlClient();
+      const sql = rawSqlClient();
       const rows = await sql`SELECT key, value FROM app_settings WHERE key LIKE 'site_%'`;
       const profile = Object.fromEntries(rows.map(row => [row.key.replace(/^site_/, ''), row.value]));
       return send(res, 200, { ok: true, profile });
