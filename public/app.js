@@ -41,9 +41,6 @@ function renderNews(){
 
   const ticker=$('#tickerText'); if(ticker) ticker.textContent=items[0]?.title || (language==='am'?'አዲስ ዜና ሲገኝ እዚህ ይታያል':'Latest headlines will appear here');
 
-  const term=($('#newsSearch')?.value||'').trim().toLocaleLowerCase();
-  const items=currentArticles.filter(a=>(String(a.title||'')+' '+String(a.summary||'')+' '+String(a.source_name||'')).toLocaleLowerCase().includes(term));
-  const ticker=$('#tickerText'); if(ticker) ticker.textContent=items[0]?.title || (language==='am'?'አዲስ ዜና ሲገኝ እዚህ ይታያል':'Latest headlines will appear here');
   const trending=$('#trendingList');
   if(trending) trending.innerHTML=items.slice(0,5).map((story,i)=>'<div class="trending-item"><span class="trending-number">'+(i+1)+'</span><div><a href="'+(/^\\d+$/.test(String(story.id))?('/read.html?id='+encodeURIComponent(story.id)):escapeHtml(story.original_url))+'" '+(/^\\d+$/.test(String(story.id))?'':'target="_blank" rel="noopener noreferrer"')+'>'+escapeHtml(story.title)+'</a><small>'+escapeHtml(story.source_name||'HULU ZENA')+' · '+dateText(story.published_at||story.fetched_at)+'</small></div></div>').join('')||'<p class="muted">ታዋቂ ዜና የለም።</p>';
   if(!items.length){grid.innerHTML='<div class="empty-state">'+ui[language].empty+'</div>';return;}
