@@ -4,7 +4,7 @@ import { send, method } from './_lib/http.js';
 import { getImageUrl, getCategory } from './_lib/news-utils.js';
 
 const parser = new Parser({
-  timeout: 12000,
+  timeout: 6000,
   headers: { 'User-Agent': 'HuluZenaNewsBot/1.0 (+RSS reader)' },
   customFields: { item: ['media:content', 'media:thumbnail', 'content:encoded', 'itunes:image'] }
 });
@@ -14,15 +14,7 @@ const FALLBACK_CACHE_MS = 60_000;
 const INGEST_MAX_AGE_MS = 60 * 60 * 1000;
 
 async function parseFeedWithRetry(url) {
-  let lastError;
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try { return await parser.parseURL(url); }
-    catch (error) {
-      lastError = error;
-      if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 300));
-    }
-  }
-  throw lastError;
+  return parser.parseURL(url);
 }
 
 const FALLBACK_SOURCES = [
