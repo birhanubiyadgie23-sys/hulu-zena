@@ -52,5 +52,9 @@ VALUES
 ('VOA English - United States', 'https://www.voanews.com/api/zqboml-vomx-tpeivmy', 'en', 'world'),
 ('VOA English - Economy and Business', 'https://www.voanews.com/api/zyboql-vomx-tpetvmi', 'en', 'economy'),
 ('VOA English - Technology', 'https://www.voanews.com/api/zyritl-vomx-tpettmq', 'en', 'technology'),
-('VOA English - International Edition', 'https://www.voanews.com/api/zumgqol-vomx-tpeg--qi', 'en', 'world')
+('VOA English - International Edition', 'https://www.voanews.com/api/zumgqol-vomx-tpeg--qi', 'en', 'world'),
+('Deutsche Welle - English', 'https://rss.dw.com/xml/rss-en-all', 'en', 'world'),
+('Al Jazeera - English', 'https://www.aljazeera.com/xml/rss/all.xml', 'en', 'world'),
+('The Guardian - World', 'https://www.theguardian.com/world/rss', 'en', 'world'),
+('NPR - World', 'https://feeds.npr.org/1004/rss.xml', 'en', 'world')
 ON CONFLICT (feed_url) DO NOTHING;
