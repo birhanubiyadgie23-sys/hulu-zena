@@ -17,6 +17,32 @@ async function loadNews(){
 function renderNews(){
   const term=($('#newsSearch')?.value||'').trim().toLocaleLowerCase();
   const items=currentArticles.filter(a=>(String(a.title||'')+' '+String(a.summary||'')+' '+String(a.source_name||'')).toLocaleLowerCase().includes(term));
+
+  // Promote the newest available article into the main hero banner.
+  const heroStory=items[0];
+  const hero=$('.hero');
+  if(hero&&heroStory){
+    const heroTitle=hero.querySelector('h1');
+    const heroSummary=hero.querySelector('p');
+    const heroEyebrow=hero.querySelector('.eyebrow');
+    const heroLink=hero.querySelector('.hero-cta');
+    const heroNote=hero.querySelector('.hero-note');
+    const numericId=/^\d+$/.test(String(heroStory.id));
+    const originalUrl=String(heroStory.original_url||'');
+    const destination=numericId?('/read.html?id='+encodeURIComponent(heroStory.id)):(/^https?:\/\//i.test(originalUrl)?originalUrl:'#newsGrid');
+    if(heroEyebrow) heroEyebrow.textContent=(language==='am'?'የቅርብ ጊዜ ዋና ዜና':'LATEST TOP STORY')+' · '+String(heroStory.source_name||'HULU ZENA');
+    if(heroTitle) heroTitle.textContent=heroStory.title||'';
+    if(heroSummary) heroSummary.textContent=heroStory.summary||heroStory.title||'';
+    if(heroLink){heroLink.href=destination;heroLink.textContent=ui[language].read;}
+    if(heroLink&&!numericId&&destination!=='#newsGrid'){heroLink.target='_blank';heroLink.rel='noopener noreferrer';}
+    else if(heroLink){heroLink.removeAttribute('target');heroLink.removeAttribute('rel');}
+    if(heroNote) heroNote.textContent=String(heroStory.source_name||'HULU ZENA')+' · '+dateText(heroStory.published_at||heroStory.fetched_at);
+  }
+
+  const ticker=$('#tickerText'); if(ticker) ticker.textContent=items[0]?.title || (language==='am'?'አዲስ ዜና ሲገኝ እዚህ ይታያል':'Latest headlines will appear here');
+
+  const trending=$('#trendingList');
+  if(trending) trending.innerHTML=items.slice(0,5).map((story,i)=>'<div class="trending-item"><span class="trending-number">'+(i+1)+'</span><div><a href="'+(/^\\d+$/.test(String(story.id))?('/read.html?id='+encodeURIComponent(story.id)):escapeHtml(story.original_url))+'" '+(/^\\d+$/.test(String(story.id))?'':'target="_blank" rel="noopener noreferrer"')+'>'+escapeHtml(story.title)+'</a><small>'+escapeHtml(story.source_name||'HULU ZENA')+' · '+dateText(story.published_at||story.fetched_at)+'</small></div></div>').join('')||'<p class="muted">ታዋቂ ዜና የለም።</p>';
   if(!items.length){grid.innerHTML='<div class="empty-state">'+ui[language].empty+'</div>';return;}
   const card=a=>'<article class="news-card category-'+escapeHtml(a.category||'world')+'">'+'<img class="news-image" src="'+escapeHtml(a.image_url||'/news-placeholder.svg')+'" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=\'/news-placeholder.svg\'">'+'<span class="category-tag">'+escapeHtml(labels[a.category]?.[language==='am'?0:1]||a.category)+'</span><h3>'+escapeHtml(a.title)+'</h3><p class="news-summary"><strong>'+(language==='am'?'ዋና ትኩረት፦ ':'Key point: ')+'</strong>'+escapeHtml(a.summary||a.title||'')+'</p><div class="card-meta"><span>'+escapeHtml(a.source_name||'News source')+' · '+escapeHtml(a.language==='en'?'English':'አማርኛ')+'</span><span>'+dateText(a.published_at||a.fetched_at)+'</span></div><a class="read-link" href="'+(/^\d+$/.test(String(a.id))?('/read.html?id='+encodeURIComponent(a.id)):escapeHtml(a.original_url))+'" '+(/^\d+$/.test(String(a.id))?'':'target="_blank" rel="noopener noreferrer"')+'>'+ui[language].read+'</a></article>';
   grid.innerHTML=items.length>1?'<div class="featured-story">'+card(items[0])+'<div class="featured-label">TOP STORY • '+(language==='am'?'ዋና ዜና':'TOP STORY')+'</div></div><div class="news-list">'+items.slice(1).map(card).join('')+'</div>':card(items[0]);
