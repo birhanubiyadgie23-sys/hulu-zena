@@ -14,7 +14,11 @@ const FALLBACK_SOURCES = [
   { name: 'VOA English - United States', url: 'https://www.voanews.com/api/zqboml-vomx-tpeivmy', language: 'en', category: 'world' },
   { name: 'VOA English - Economy and Business', url: 'https://www.voanews.com/api/zyboql-vomx-tpetvmi', language: 'en', category: 'economy' },
   { name: 'VOA English - Technology', url: 'https://www.voanews.com/api/zyritl-vomx-tpettmq', language: 'en', category: 'technology' },
-  { name: 'VOA English - International Edition', url: 'https://www.voanews.com/api/zumgqol-vomx-tpeg--qi', language: 'en', category: 'world' }
+  { name: 'VOA English - International Edition', url: 'https://www.voanews.com/api/zumgqol-vomx-tpeg--qi', language: 'en', category: 'world' },
+  { name: 'Deutsche Welle - English', url: 'https://rss.dw.com/xml/rss-en-all', language: 'en', category: 'world' },
+  { name: 'Al Jazeera - English', url: 'https://www.aljazeera.com/xml/rss/all.xml', language: 'en', category: 'world' },
+  { name: 'The Guardian - World', url: 'https://www.theguardian.com/world/rss', language: 'en', category: 'world' },
+  { name: 'NPR - World', url: 'https://feeds.npr.org/1004/rss.xml', language: 'en', category: 'world' }
 ];
 
 function plain(value, max = 650) {
@@ -87,7 +91,9 @@ async function readFallbackFeeds({ category, language, limit }) {
     if (!unique.has(article.original_url)) unique.set(article.original_url, article);
   }
 
+  const recentCutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
   return [...unique.values()]
+    .filter((article) => !article.published_at || Date.parse(article.published_at) >= recentCutoff)
     .sort((a, b) => Date.parse(b.published_at || b.fetched_at) - Date.parse(a.published_at || a.fetched_at))
     .slice(0, limit);
 }
@@ -106,7 +112,7 @@ export default async function handler(req, res) {
     }
 
     const sql = sqlClient();
-    const rows = await sql`SELECT a.id, a.title, a.summary, a.original_url, a.image_url, a.category, a.language, a.published_at, a.fetched_at, s.name AS source_name FROM news_articles a LEFT JOIN news_sources s ON s.id = a.source_id WHERE a.is_published = TRUE AND (${category} = 'all' OR a.category = ${category}) AND (${language} = 'all' OR a.language = ${language}) ORDER BY COALESCE(a.published_at, a.fetched_at) DESC LIMIT ${limit}`;
+    const rows = await sql`SELECT a.id, a.title, a.summary, a.original_url, a.image_url, a.category, a.language, a.published_at, a.fetched_at, s.name AS source_name FROM news_articles a LEFT JOIN news_sources s ON s.id = a.source_id WHERE a.is_published = TRUE AND (${category} = 'all' OR a.category = ${category}) AND (${language} = 'all' OR a.language = ${language}) AND (a.published_at IS NULL OR a.published_at >= NOW() - INTERVAL '30 days') ORDER BY COALESCE(a.published_at, a.fetched_at) DESC LIMIT ${limit}`;
     return sendCached(res, { ok: true, articles: rows, mode: 'database' }, 's-maxage=120, stale-while-revalidate=300');
   } catch {
     try {
