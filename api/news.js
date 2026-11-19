@@ -5,7 +5,8 @@ import { getImageUrl, getCategory } from './_lib/news-utils.js';
 
 const parser = new Parser({
   timeout: 12000,
-  headers: { 'User-Agent': 'HuluZenaNewsBot/1.0 (+RSS reader)' }
+  headers: { 'User-Agent': 'HuluZenaNewsBot/1.0 (+RSS reader)' },
+  customFields: { item: ['media:content', 'media:thumbnail', 'content:encoded', 'itunes:image'] }
 });
 
 const fallbackCache = new Map();
