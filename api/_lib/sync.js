@@ -30,6 +30,7 @@ export async function syncFeeds() {
           category: source.category,
           language: source.language,
           published: published && !Number.isNaN(Date.parse(published)) ? new Date(published).toISOString() : null,
+          image: safeUrl(item.enclosure?.url || item['media:thumbnail']?.url || item['media:content']?.url || ''),
           fingerprint: fingerprint(title)
         };
       }).filter(Boolean);
@@ -59,7 +60,7 @@ export async function syncFeeds() {
       try {
         const result = await sql`
           INSERT INTO news_articles (source_id, title, summary, original_url, image_url, category, language, published_at, fingerprint)
-          SELECT ${item.sourceId}, ${item.title}, ${item.summary}, ${item.url}, NULL, ${item.category}, ${item.language}, ${item.published}, ${item.fingerprint}
+          SELECT ${item.sourceId}, ${item.title}, ${item.summary}, ${item.url}, ${item.image}, ${item.category}, ${item.language}, ${item.published}, ${item.fingerprint}
           WHERE NOT EXISTS (SELECT 1 FROM news_articles WHERE fingerprint = ${item.fingerprint} AND fetched_at > NOW() - INTERVAL '48 hours')
           ON CONFLICT (original_url) DO NOTHING RETURNING id`;
         return { item, inserted: result.length > 0, error: null };
