@@ -14,8 +14,8 @@
     "test": "node scripts/test-auth.js && node scripts/check-project.js"
   },
   "dependencies": {
-    "@neondatabase/serverless": "^1.0.1",
-    "rss-parser": "^3.13.0"
+    "rss-parser": "^3.13.0",
+    "postgres": "^4.1.1"
   },
   "devDependencies": {
     "vercel": "^48.1.0"
