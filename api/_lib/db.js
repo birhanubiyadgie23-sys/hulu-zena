@@ -86,8 +86,8 @@ export function sqlClient() {
 
   if (!client) {
     client = postgres(connectionString, {
-      max: 1,
-      idle_timeout: 20,
+      max: 3,
+      idle_timeout: 10,
       connect_timeout: 5,
       query_timeout: 12000,
       prepare: false
