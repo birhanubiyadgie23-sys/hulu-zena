@@ -48,6 +48,7 @@ INSERT INTO news_sources (name, feed_url, language, category)
 VALUES
 ('VOA Amharic - Ethiopia', 'https://amharic.voanews.com/api/ztbgtl-vomx-tpekvbv', 'am', 'ethiopia'),
 ('VOA Amharic - World', 'https://amharic.voanews.com/api/ziibql-vomx-tpemgqqo', 'am', 'world'),
+('Fana Media Corporation - Amharic', 'https://www.fanamc.com/feed/', 'am', 'ethiopia'),
 ('VOA English - Africa', 'https://www.voanews.com/api/z-botl-vomx-tpertmq', 'en', 'world'),
 ('VOA English - United States', 'https://www.voanews.com/api/zqboml-vomx-tpeivmy', 'en', 'world'),
 ('VOA English - Economy and Business', 'https://www.voanews.com/api/zyboql-vomx-tpetvmi', 'en', 'economy'),

@@ -10,6 +10,7 @@ const parser = new Parser({
 const FALLBACK_SOURCES = [
   { name: 'VOA Amharic - Ethiopia', url: 'https://amharic.voanews.com/api/ztbgtl-vomx-tpekvbv', language: 'am', category: 'ethiopia' },
   { name: 'VOA Amharic - World', url: 'https://amharic.voanews.com/api/ziibql-vomx-tpemgqqo', language: 'am', category: 'world' },
+  { name: 'Fana Media Corporation - Amharic', url: 'https://www.fanamc.com/feed/', language: 'am', category: 'ethiopia' },
   { name: 'VOA English - Africa', url: 'https://www.voanews.com/api/z-botl-vomx-tpertmq', language: 'en', category: 'world' },
   { name: 'VOA English - United States', url: 'https://www.voanews.com/api/zqboml-vomx-tpeivmy', language: 'en', category: 'world' },
   { name: 'VOA English - Economy and Business', url: 'https://www.voanews.com/api/zyboql-vomx-tpetvmi', language: 'en', category: 'economy' },
