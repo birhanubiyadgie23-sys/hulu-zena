@@ -1,5 +1,5 @@
 const $ = (s) => document.querySelector(s);
-const grid = $('#newsGrid'); let category = 'all'; let language = (localStorage.getItem('hulu-zena-language') === 'en' ? 'en' : 'am'); let adminOpen = false; let currentArticles = [];
+const grid = $('#newsGrid'); let category = 'all'; let language = 'am'; let adminOpen = false; let currentArticles = [];
 const labels = {ethiopia:['ኢትዮጵያ','Ethiopia'],world:['ዓለም','World'],politics:['ፖለቲካ','Politics'],business:['ንግድ','Business'],technology:['ቴክኖሎጂ','Technology'],sports:['ስፖርት','Sports'],economy:['ኢኮኖሚ','Economy']};
 const ui = {am:{all:'ሁሉም',latest:'የቅርብ ጊዜ ዜናዎች',admin:'አድሚን',tagline:'ዓለምን በዜና ይወቁ!',hero:'ዜናውን ይከታተሉ።',hero2:'ዓለምን ይወቁ።',intro:'ከኢትዮጵያና ከዓለም የተመረጡ ዜናዎች፣ በአንድ ቦታ።',updates:'የቅርብ ጊዜ ዜናዎች',refresh:'↻ አድስ',read:'ሙሉ ዜናውን ያንብቡ ↗',search:'ዜና ፈልግ...',empty:'የፍለጋዎ ውጤት አልተገኘም።'},en:{all:'All',latest:'Latest News',admin:'Admin',tagline:'Know the world through news!',hero:'Stay informed.',hero2:'Know the world.',intro:'Selected news from Ethiopia and around the world, in one place.',updates:'Latest Updates',refresh:'↻ Refresh',read:'Read full story ↗',search:'Search news...',empty:'No matching stories found.'}};
 const escapeHtml = (s='') => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -38,4 +38,4 @@ $('#sourceForm').addEventListener('submit',async e=>{e.preventDefault();const f=
 $('#sourceList').addEventListener('click',async e=>{const t=e.target.closest('[data-toggle]'),d=e.target.closest('[data-delete]');try{if(t)await api(`/api/admin?id=${t.dataset.toggle}`,{method:'PATCH',body:JSON.stringify({is_active:t.dataset.active!=='true'})});if(d&&confirm('ይህን ምንጭ ማጥፋት ይፈልጋሉ?'))await api(`/api/admin?id=${d.dataset.delete}`,{method:'DELETE'});checkAdmin();}catch(err){alert(err.message);}});
 $('#articleList').addEventListener('click',async e=>{const b=e.target.closest('[data-article-toggle]');if(!b)return;try{await api(`/api/admin-articles?id=${b.dataset.articleToggle}`,{method:'PATCH',body:JSON.stringify({is_published:b.dataset.published!=='true'})});checkAdmin();}catch(err){alert(err.message);}});
 $('#logout').addEventListener('click',async()=>{try{await api('/api/admin?logout=1',{method:'POST',body:'{}'});}catch{}checkAdmin();});
-loadNews();
+if(localStorage.getItem('hulu-zena-language') === 'en') $('#languageToggle').click(); else loadNews();
