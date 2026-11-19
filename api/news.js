@@ -1,6 +1,7 @@
 import Parser from 'rss-parser';
 import { sqlClient } from './_lib/db.js';
 import { send, method } from './_lib/http.js';
+import { getImageUrl, getCategory } from './_lib/news-utils.js';
 
 const parser = new Parser({
   timeout: 12000,
@@ -59,10 +60,6 @@ function safeUrl(value) {
   }
 }
 
-function imageUrl(item) {
-  return safeUrl(item?.enclosure?.url || item?.['media:thumbnail']?.url || '');
-}
-
 function sendCached(res, data, cacheControl) {
   res.statusCode = 200;
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -76,7 +73,6 @@ async function readFallbackFeeds({ category, language, limit }) {
   if (cached && Date.now() - cached.cachedAt < FALLBACK_CACHE_MS) return cached.articles.slice(0, limit);
 
   const groups = await Promise.all(FALLBACK_SOURCES
-    .filter((source) => category === 'all' || source.category === category)
     .filter((source) => language === 'all' || source.language === language)
     .map(async (source) => {
       try {
@@ -94,8 +90,8 @@ async function readFallbackFeeds({ category, language, limit }) {
             title,
             summary: plain(item.contentSnippet || item.summary || item.content || item.description || '', 500),
             original_url: originalUrl,
-            image_url: imageUrl(item),
-            category: source.category,
+            image_url: getImageUrl(item),
+            category: getCategory(item, source.category),
             language: source.language,
             published_at: publishedAt,
             fetched_at: new Date().toISOString(),
@@ -114,6 +110,7 @@ async function readFallbackFeeds({ category, language, limit }) {
 
   // Only display stories published within the last hour.
   const articles = [...unique.values()]
+    .filter((article) => category === 'all' || article.category === category)
     .filter((article) => article.published_at && Date.parse(article.published_at) >= Date.now() - INGEST_MAX_AGE_MS && Date.parse(article.published_at) <= Date.now() + 5 * 60_000)
     .sort((a, b) => Date.parse(b.published_at || b.fetched_at) - Date.parse(a.published_at || a.fetched_at));
   if (articles.length) fallbackCache.set(cacheKey, { cachedAt: Date.now(), articles });
