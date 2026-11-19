@@ -9,6 +9,7 @@ const parser = new Parser({
 
 const fallbackCache = new Map();
 const FALLBACK_CACHE_MS = 60_000;
+const NEWS_MAX_AGE_MS = 60 * 60 * 1000;
 
 async function parseFeedWithRetry(url) {
   let lastError;
@@ -46,7 +47,7 @@ function plain(value, max = 650) {
     .replace(/&#39;/g, "'")
     .replace(/\s+/g, ' ')
     .trim()
-    .slice(0, max);
+    .slice(0, Math.min(max, 220));
 }
 
 function safeUrl(value) {
@@ -111,9 +112,9 @@ async function readFallbackFeeds({ category, language, limit }) {
     if (!unique.has(article.original_url)) unique.set(article.original_url, article);
   }
 
-  const recentCutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  // Only display stories published within the last hour.
   const articles = [...unique.values()]
-    .filter((article) => !article.published_at || Date.parse(article.published_at) >= recentCutoff)
+    .filter((article) => article.published_at && Date.parse(article.published_at) >= Date.now() - NEWS_MAX_AGE_MS && Date.parse(article.published_at) <= Date.now() + 5 * 60_000)
     .sort((a, b) => Date.parse(b.published_at || b.fetched_at) - Date.parse(a.published_at || a.fetched_at));
   if (articles.length) fallbackCache.set(cacheKey, { cachedAt: Date.now(), articles });
   return articles.slice(0, limit);
@@ -126,21 +127,18 @@ export default async function handler(req, res) {
   const limit = Math.min(60, Math.max(1, Number.parseInt(req.query?.limit || '30', 10) || 30));
   const language = ['am', 'en'].includes(req.query?.language) ? req.query.language : 'all';
 
+  // Live RSS keeps the public page fresh despite Hobby's daily cron schedule.
   try {
-    if (!process.env.DATABASE_URL) {
-      const articles = await readFallbackFeeds({ category, language, limit });
-      return sendCached(res, { ok: true, articles, mode: 'rss-fallback' }, 's-maxage=300, stale-while-revalidate=600');
-    }
+    const articles = await readFallbackFeeds({ category, language, limit });
+    if (articles.length) return sendCached(res, { ok: true, articles, mode: 'live-rss' }, 's-maxage=60, stale-while-revalidate=60');
+  } catch {}
 
+  try {
+    if (!process.env.DATABASE_URL) return sendCached(res, { ok: true, articles: [], mode: 'live-rss' }, 's-maxage=60, stale-while-revalidate=60');
     const sql = sqlClient();
-    const rows = await sql`SELECT a.id, a.title, a.summary, a.original_url, a.image_url, a.category, a.language, a.published_at, a.fetched_at, s.name AS source_name FROM news_articles a LEFT JOIN news_sources s ON s.id = a.source_id WHERE a.is_published = TRUE AND (${category} = 'all' OR a.category = ${category}) AND (${language} = 'all' OR a.language = ${language}) AND (a.published_at IS NULL OR a.published_at >= NOW() - INTERVAL '30 days') ORDER BY COALESCE(a.published_at, a.fetched_at) DESC LIMIT ${limit}`;
-    return sendCached(res, { ok: true, articles: rows, mode: 'database' }, 's-maxage=120, stale-while-revalidate=300');
+    const rows = await sql`SELECT a.id, a.title, a.summary, a.original_url, a.image_url, a.category, a.language, a.published_at, a.fetched_at, s.name AS source_name FROM news_articles a LEFT JOIN news_sources s ON s.id = a.source_id WHERE a.is_published = TRUE AND (${category} = 'all' OR a.category = ${category}) AND (${language} = 'all' OR a.language = ${language}) AND a.published_at >= NOW() - INTERVAL '1 hour' AND a.published_at <= NOW() + INTERVAL '5 minutes' ORDER BY a.published_at DESC LIMIT ${limit}`;
+    return sendCached(res, { ok: true, articles: rows, mode: 'database' }, 's-maxage=60, stale-while-revalidate=60');
   } catch {
-    try {
-      const articles = await readFallbackFeeds({ category, language, limit });
-      return sendCached(res, { ok: true, articles, mode: 'rss-fallback' }, 's-maxage=120, stale-while-revalidate=300');
-    } catch {
-      return send(res, 503, { ok: false, error: 'News feeds are temporarily unavailable' });
-    }
+    return send(res, 503, { ok: false, error: 'News feeds are temporarily unavailable' });
   }
 }
