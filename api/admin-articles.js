@@ -24,8 +24,15 @@ export default async function handler(req, res) {
   try {
     const sql = sqlClient();
     if (req.method === 'GET') {
-      const articles = await sql`SELECT id, title, summary, source_name, image_url, category, language, is_published, published_at, original_url FROM news_articles ORDER BY fetched_at DESC LIMIT 100`;
-      return send(res, 200, { ok: true, articles });
+      if (req.query?.id) {
+        const id = Number(req.query.id);
+        if (!Number.isSafeInteger(id) || id < 1) return send(res, 400, { ok: false, error: 'Valid article id required' });
+        const rows = await sql`SELECT id, title, summary, source_content, source_name, image_url, category, language, is_published, published_at, original_url FROM news_articles WHERE id = ${id} LIMIT 1`;
+        if (!rows.length) return send(res, 404, { ok: false, error: 'ዜናው አልተገኘም።' });
+        return send(res, 200, { ok: true, article: rows[0] });
+      }
+      const articles = await sql`SELECT id, title, source_name, image_url, category, language, is_published, published_at, original_url FROM news_articles ORDER BY fetched_at DESC, id DESC`;
+      return send(res, 200, { ok: true, articles, total: articles.length });
     }
     const body = readBody(req);
     if (req.method === 'POST') {
