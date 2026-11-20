@@ -81,7 +81,8 @@ async function readFallbackFeeds({ category, language, limit }) {
           return {
             id: originalUrl,
             title,
-            summary: plain(item.contentSnippet || item.summary || item.content || item.description || '', 500),
+            summary: '',
+            summary_status: 'pending',
             original_url: originalUrl,
             image_url: getImageUrl(item),
             category: getCategory(item, source.category),
@@ -124,7 +125,7 @@ export default async function handler(req, res) {
       if (req.query?.id) {
         const id = Number(req.query.id);
         if (!Number.isSafeInteger(id) || id < 1) return send(res, 400, { ok: false, error: 'Invalid article id' });
-        const rows = await sql`SELECT a.id, a.title, a.summary, a.original_url, a.image_url, a.category, a.language, a.published_at, a.fetched_at, s.name AS source_name FROM news_articles a LEFT JOIN news_sources s ON s.id = a.source_id WHERE a.id = ${id} AND a.is_published = TRUE LIMIT 1`;
+        const rows = await sql`SELECT a.id, a.title, a.summary, a.summary_status, a.original_url, a.image_url, a.category, a.language, a.published_at, a.fetched_at, s.name AS source_name FROM news_articles a LEFT JOIN news_sources s ON s.id = a.source_id WHERE a.id = ${id} AND a.is_published = TRUE LIMIT 1`;
         if (!rows.length) return send(res, 404, { ok: false, error: 'Article not found' });
         const related = await sql`SELECT id, title, image_url, category, published_at FROM news_articles WHERE is_published = TRUE AND category = ${rows[0].category} AND id <> ${id} ORDER BY published_at DESC LIMIT 4`;
         return sendCached(res, { ok: true, article: rows[0], related }, 's-maxage=60, stale-while-revalidate=60');
