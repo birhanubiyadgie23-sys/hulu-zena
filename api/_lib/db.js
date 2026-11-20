@@ -30,6 +30,8 @@ const schemaStatements = [
     is_published BOOLEAN NOT NULL DEFAULT TRUE,
     fingerprint TEXT NOT NULL
   )`,
+  `ALTER TABLE news_articles ADD COLUMN IF NOT EXISTS source_content TEXT NOT NULL DEFAULT ''`,
+  `ALTER TABLE news_articles ADD COLUMN IF NOT EXISTS summary_status TEXT NOT NULL DEFAULT 'pending'`,
   'CREATE INDEX IF NOT EXISTS news_articles_published_date_idx ON news_articles(is_published, published_at DESC)',
   'CREATE INDEX IF NOT EXISTS news_articles_category_idx ON news_articles(category, published_at DESC)',
   'CREATE INDEX IF NOT EXISTS news_articles_fingerprint_idx ON news_articles(fingerprint)',
@@ -76,6 +78,7 @@ async function initializeSchema(db) {
   // Create independent tables together, then indexes, then seed sources.
   await Promise.all([0, 1, 5, 6, 7].map((index) => db.unsafe(schemaStatements[index])));
   await Promise.all([2, 3, 4].map((index) => db.unsafe(schemaStatements[index])));
+  await Promise.all([9, 10].map((index) => db.unsafe(schemaStatements[index])));
   await db.unsafe(schemaStatements[8]);
 }
 
