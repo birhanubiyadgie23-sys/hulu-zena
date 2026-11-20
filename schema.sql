@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS news_articles (
   summary TEXT NOT NULL DEFAULT '',
   source_content TEXT NOT NULL DEFAULT '',
   summary_status TEXT NOT NULL DEFAULT 'pending',
+  source_name TEXT NOT NULL DEFAULT '',
   original_url TEXT NOT NULL UNIQUE,
   image_url TEXT,
   category TEXT NOT NULL DEFAULT 'ethiopia',
