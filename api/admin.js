@@ -7,7 +7,13 @@ import { send, method, readBody, cleanText } from './_lib/http.js';
 import { requireAdmin, clearSession } from './_lib/auth.js';
 const scrypt = promisify(scryptCallback);
 async function verifyPassword(password, stored) {
-  const [scheme, salt, hash] = String(stored || '').split('
+  const [scheme, salt, hash] = String(stored || '').split(String.fromCharCode(36));
+  if (scheme !== 'scrypt' || !salt || !hash) return false;
+  const expected = Buffer.from(hash, 'hex');
+  const actual = await scrypt(password, salt, expected.length);
+  return actual.length === expected.length && timingSafeEqual(actual, expected);
+}
+async function validateFeedUrl(value) {
   let url;
   try { url = new URL(value); } catch { return false; }
   if (url.protocol !== 'https:' || url.username || url.password || !url.hostname || url.hostname === 'localhost' || url.hostname.endsWith('.local')) return false;
