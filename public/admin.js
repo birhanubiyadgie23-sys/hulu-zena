@@ -59,6 +59,34 @@ articleEditor.addEventListener('submit',async e=>{
  finally{b.disabled=false;}
 });
 
+
+const articleEditor=$('#articleEditor');
+function openArticleEditor(article=null){
+ articleEditor.classList.add('open');articleEditor.reset();
+ articleEditor.elements.id.value=article?.id||'';
+ articleEditor.elements.title.value=article?.title||'';
+ articleEditor.elements.content.value=article?.summary||'';
+ articleEditor.elements.category.value=article?.category||'ethiopia';
+ articleEditor.elements.language.value=article?.language||'am';
+ articleEditor.elements.image_url.value=article?.image_url||'';
+ articleEditor.elements.is_published.checked=article?Boolean(article.is_published):true;
+ $('#articleEditorMessage').textContent=article?'ዜናውን አስተካክለው ያስቀምጡ።':'አዲስ ዜና ይጻፉ።';
+ articleEditor.scrollIntoView({behavior:'smooth',block:'start'});
+}
+$('#newArticle').addEventListener('click',()=>openArticleEditor());
+$('#cancelArticleEdit').addEventListener('click',()=>{articleEditor.classList.remove('open');articleEditor.reset();});
+articleEditor.addEventListener('submit',async e=>{
+ e.preventDefault();const b=articleEditor.querySelector('button[type=submit]');b.disabled=true;
+ const fd=new FormData(articleEditor),id=fd.get('id');
+ const payload={title:fd.get('title'),content:fd.get('content'),category:fd.get('category'),language:fd.get('language'),image_url:fd.get('image_url'),is_published:fd.get('is_published')==='on'};
+ try{
+  await api(id?'/api/admin-articles?id='+encodeURIComponent(id):'/api/admin-articles',{method:id?'PATCH':'POST',body:JSON.stringify(payload)});
+  toast(id?'ዜናው ተስተካክሏል።':'አዲስ ዜና ታትሟል።');
+  articleEditor.classList.remove('open');articleEditor.reset();await loadData();
+ }catch(err){$('#articleEditorMessage').textContent=err.message;toast(err.message);}
+ finally{b.disabled=false;}
+});
+
 $('#articleSearch').addEventListener('input',renderArticles);$('#articleStatus').addEventListener('change',renderArticles);$('#articleCategory').addEventListener('change',renderArticles);
 $('#refreshArticles').addEventListener('click',loadData);$('#refreshMessages').addEventListener('click',loadData);
 $('#globalSearch').addEventListener('keydown',e=>{if(e.key==='Enter'){go('articles');$('#articleSearch').value=e.currentTarget.value;renderArticles();}});
