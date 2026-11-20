@@ -37,7 +37,7 @@ async function createEditorialSummary(title, sourceContent, language) {
     });
     if (!response.ok) throw new Error('AI service returned ' + response.status);
     const data = await response.json();
-    const summary = String(data?.choices?.[0]?.message?.content || '').replace(/<script[\\s\\S]*?<\\/script>/gi, ' ').replace(/<style[\\s\\S]*?<\\/style>/gi, ' ').replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&quot;/g, '\"').replace(/&#39;/g, \"'\").replace(/[ \\t]+/g, ' ').replace(/\\n[ \\t]*/g, '\\n').replace(/\\n{3,}/g, '\\n\\n').trim().slice(0, 5000);
+    const summary = String(data?.choices?.[0]?.message?.content || '').replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/[ \t]+/g, ' ').replace(/\n[ \t]*/g, '\n').replace(/\n{3,}/g, '\n\n').trim().slice(0, 5000);
     if (summary.length < 180) return { summary: '', status: 'error' };
     return { summary, status: 'ready' };
   } catch (error) {
