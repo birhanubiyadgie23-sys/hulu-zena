@@ -15,7 +15,7 @@ $('#menuToggle').addEventListener('click',()=>$('#sidebar').classList.toggle('op
 $('#todayText').textContent=new Date().toLocaleDateString(undefined,{weekday:'short',year:'numeric',month:'short',day:'numeric'});
 function renderChart(runs=[]){const values=[...runs].reverse().map(r=>Number(r.inserted_count)||0),max=Math.max(1,...values);const count=Math.max(values.length,1),points=values.map((v,i)=>{const x=48+(632*(i/Math.max(count-1,1))),y=190-(v/max)*145;return [x,y,v]});$('#chartLine').setAttribute('points',points.length?points.map(p=>p[0]+','+p[1]).join(' '):'48,190 680,190');$('#chartDots').innerHTML=points.map(p=>'<circle cx="'+p[0]+'" cy="'+p[1]+'" r="5"><title>'+p[2]+' articles</title></circle>').join('');$('#chartLabels').innerHTML=points.map((p,i)=>'<text x="'+p[0]+'" y="212" text-anchor="middle">'+(i+1)+'</text>').join('');}
 function renderActivity(runs=[]){$('#recentActivity').innerHTML=runs.length?runs.slice(0,5).map(r=>'<div class="activity-item"><span class="activity-icon">↻</span><div><b>News synchronization '+esc(r.status||'completed')+'</b><small>'+Number(r.inserted_count||0)+' new articles · '+Number(r.error_count||0)+' errors</small></div><time>'+esc(date(r.started_at))+'</time></div>').join(''):'<div class="empty-row">No recent activity recorded yet.</div>';}
-function renderRecentArticles(){const rows=state.articles.slice(0,5);$('#recentArticles').innerHTML=rows.length?rows.map((a,i)=>'<tr><td>'+(i+1)+'</td><td class="title-cell">'+esc(a.title)+'</td><td>'+esc(labels[a.category]||a.category)+'</td><td>'+esc(a.language==='am'?'Amharic':'English')+'</td><td><span class="pill '+(a.is_published?'published':'hidden-status')+'">'+(a.is_published?'Published':'Hidden')+'</span></td><td><div class="row-actions"><button data-edit-article="'+a.id+'">አስተካክል</button><button data-toggle-article="'+a.id+'" data-current="'+a.is_published+'">'+(a.is_published?'Hide':'Publish')+'</button></div></td></tr>').join(''):'<tr><td colspan="6" class="empty-row">No articles found.</td></tr>';}
+function renderRecentArticles(){const rows=state.articles.slice(0,5);$('#recentArticles').innerHTML=rows.length?rows.map((a,i)=>'<tr><td>'+(i+1)+'</td><td class="title-cell">'+esc(a.title)+'</td><td>'+esc(labels[a.category]||a.category)+'</td><td>'+esc(a.language==='am'?'Amharic':'English')+'</td><td><span class="pill '+(a.is_published?'published':'hidden-status')+'">'+(a.is_published?'Published':'Hidden')+'</span></td><td><div class="row-actions"><button data-edit-article="'+a.id+'">አስተካክል</button><button data-edit-article="'+a.id+'">አስተካክል</button><button data-toggle-article="'+a.id+'" data-current="'+a.is_published+'">'+(a.is_published?'Hide':'Publish')+'</button></div></td></tr>').join(''):'<tr><td colspan="6" class="empty-row">No articles found.</td></tr>';}
 function renderOverview(d){const s=d.stats||{},runs=d.runs||[];$('#metricTotal').textContent=s.total??0;$('#metricPublished').textContent=s.published??0;$('#metricSources').textContent=(d.sources||[]).filter(x=>x.is_active).length;$('#metricAdded').textContent=runs.length?(runs[0].inserted_count??0):'—';renderChart(runs);renderActivity(runs);renderRecentArticles();$('#messageCount').textContent=(d.messages||[]).length;}
 function renderArticles(){const term=($('#articleSearch').value||'').toLowerCase(),status=$('#articleStatus').value,cat=$('#articleCategory').value;const rows=state.articles.filter(a=>(a.title||'').toLowerCase().includes(term)&&(status==='all'||(status==='published')===Boolean(a.is_published))&&(cat==='all'||a.category===cat));$('#articleTable').innerHTML=rows.length?rows.map(a=>'<tr><td class="title-cell">'+esc(a.title)+'</td><td>'+esc(labels[a.category]||a.category)+'</td><td>'+esc(a.language==='am'?'Amharic':'English')+'</td><td><span class="pill '+(a.is_published?'published':'hidden-status')+'">'+(a.is_published?'Published':'Hidden')+'</span></td><td><div class="row-actions"><button data-toggle-article="'+a.id+'" data-current="'+a.is_published+'">'+(a.is_published?'Hide':'Publish')+'</button><a class="soft-btn" href="'+esc(a.original_url)+'" target="_blank" rel="noopener">Open ↗</a></div></td></tr>').join(''):'<tr><td colspan="5" class="empty-row">No matching articles.</td></tr>';}
 function renderCategories(){const counts={};state.articles.forEach(a=>counts[a.category]=(counts[a.category]||0)+1);$('#categoryGrid').innerHTML=Object.entries(labels).map(([key,name])=>'<article class="category-card"><b>'+name+'</b><strong>'+(counts[key]||0)+'</strong><small>Articles in this category</small></article>').join('');}
@@ -59,33 +59,6 @@ articleEditor.addEventListener('submit',async e=>{
  finally{b.disabled=false;}
 });
 
-
-const articleEditor=$('#articleEditor');
-function openArticleEditor(article=null){
- articleEditor.classList.add('open');articleEditor.reset();
- articleEditor.elements.id.value=article?.id||'';
- articleEditor.elements.title.value=article?.title||'';
- articleEditor.elements.content.value=article?.summary||'';
- articleEditor.elements.category.value=article?.category||'ethiopia';
- articleEditor.elements.language.value=article?.language||'am';
- articleEditor.elements.image_url.value=article?.image_url||'';
- articleEditor.elements.is_published.checked=article?Boolean(article.is_published):true;
- $('#articleEditorMessage').textContent=article?'ዜናውን አስተካክለው ያስቀምጡ።':'አዲስ ዜና ይጻፉ።';
- articleEditor.scrollIntoView({behavior:'smooth',block:'start'});
-}
-$('#newArticle').addEventListener('click',()=>openArticleEditor());
-$('#cancelArticleEdit').addEventListener('click',()=>{articleEditor.classList.remove('open');articleEditor.reset();});
-articleEditor.addEventListener('submit',async e=>{
- e.preventDefault();const b=articleEditor.querySelector('button[type=submit]');b.disabled=true;
- const fd=new FormData(articleEditor),id=fd.get('id');
- const payload={title:fd.get('title'),content:fd.get('content'),category:fd.get('category'),language:fd.get('language'),image_url:fd.get('image_url'),is_published:fd.get('is_published')==='on'};
- try{
-  await api(id?'/api/admin-articles?id='+encodeURIComponent(id):'/api/admin-articles',{method:id?'PATCH':'POST',body:JSON.stringify(payload)});
-  toast(id?'ዜናው ተስተካክሏል።':'አዲስ ዜና ታትሟል።');
-  articleEditor.classList.remove('open');articleEditor.reset();await loadData();
- }catch(err){$('#articleEditorMessage').textContent=err.message;toast(err.message);}
- finally{b.disabled=false;}
-});
 
 $('#articleSearch').addEventListener('input',renderArticles);$('#articleStatus').addEventListener('change',renderArticles);$('#articleCategory').addEventListener('change',renderArticles);
 $('#refreshArticles').addEventListener('click',loadData);$('#refreshMessages').addEventListener('click',loadData);
