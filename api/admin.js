@@ -89,10 +89,31 @@ export default async function handler(req, res) {
       await sql`INSERT INTO app_settings (key, value) VALUES ('admin_password_hash', ${passwordHash}) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()`;
       return send(res, 200, { ok: true, message: 'የአድሚን ፓስወርድ ተቀይሯል።' });
     }
+    if (req.method === 'POST' && req.query?.categories === '1') {
+      const current = await sql`SELECT value FROM app_settings WHERE key = 'site_categories' LIMIT 1`;
+      let categories = [];
+      try { categories = JSON.parse(current[0]?.value || '[]'); } catch {}
+      if (!Array.isArray(categories)) categories = [];
+      const action = cleanText(body.action, 10);
+      const slug = cleanText(body.slug, 30).toLowerCase().replace(/[^a-z0-9_-]/g, '');
+      const nameAm = cleanText(body.name_am, 60);
+      const nameEn = cleanText(body.name_en, 60);
+      if (action === 'delete') categories = categories.filter(item => item.slug !== slug);
+      else if (action === 'save') {
+        if (!slug || !nameAm || !nameEn) return send(res, 400, { ok: false, error: 'የምድቡን ኮድና ስሞች ያስገቡ።' });
+        const item = { slug, name_am: nameAm, name_en: nameEn };
+        const index = categories.findIndex(entry => entry.slug === slug);
+        if (index >= 0) categories[index] = item; else categories.push(item);
+      } else return send(res, 400, { ok: false, error: 'Invalid category action.' });
+      await sql`INSERT INTO app_settings (key, value) VALUES ('site_categories', ${JSON.stringify(categories)}) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()`;
+      return send(res, 200, { ok: true, categories });
+    }
     if (req.method === 'POST' && req.query?.profile === '1') {
-      const fields = ['about_am', 'about_en', 'facebook', 'telegram', 'youtube', 'instagram', 'tiktok', 'contact_email'];
+      const fields = ['about_am', 'about_en', 'facebook', 'telegram', 'youtube', 'instagram', 'tiktok', 'contact_email', 'welcome_am', 'welcome_en', 'site_name', 'logo_url', 'hero_bg_url', 'primary_color', 'accent_color'];
       for (const field of fields) {
-        const value = cleanText(body[field], field.startsWith('about_') ? 2000 : 300);
+        const value = cleanText(body[field], ['about_am','about_en','welcome_am','welcome_en'].includes(field) ? 2000 : (['logo_url','hero_bg_url'].includes(field) ? 1800000 : 300));
+        if (['logo_url','hero_bg_url'].includes(field) && value && !/^(https:\/\/|data:image\/(png|jpeg|webp|svg\+xml);base64,)/i.test(value)) return send(res, 400, { ok: false, error: 'Image must be HTTPS or a supported image file.' });
+        if (['primary_color','accent_color'].includes(field) && value && !/^#[0-9a-fA-F]{6}$/.test(value)) return send(res, 400, { ok: false, error: 'Please use a valid color.' });
         if (['facebook','telegram','youtube','instagram','tiktok'].includes(field) && value) {
           try { const url = new URL(value); if (url.protocol !== 'https:') return send(res, 400, { ok: false, error: 'Social links must use HTTPS.' }); }
           catch { return send(res, 400, { ok: false, error: 'Please enter valid social links.' }); }
