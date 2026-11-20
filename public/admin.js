@@ -66,5 +66,16 @@ $('#globalSearch').addEventListener('keydown',e=>{if(e.key==='Enter'){go('articl
 document.addEventListener('click',async e=>{const editArticle=e.target.closest('[data-edit-article]'),article=e.target.closest('[data-toggle-article]'),source=e.target.closest('[data-toggle-source]'),del=e.target.closest('[data-delete-source]');try{if(editArticle){const found=state.articles.find(a=>String(a.id)===editArticle.dataset.editArticle);if(found)openArticleEditor(found);}if(article){await api('/api/admin-articles?id='+encodeURIComponent(article.dataset.toggleArticle),{method:'PATCH',body:JSON.stringify({is_published:article.dataset.current!=='true'})});toast('Article status updated.');await loadData();}if(source){await api('/api/admin?id='+encodeURIComponent(source.dataset.toggleSource),{method:'PATCH',body:JSON.stringify({is_active:source.dataset.current!=='true'})});toast('News source updated.');await loadData();}if(del&&confirm('Delete this news source?')){await api('/api/admin?id='+encodeURIComponent(del.dataset.deleteSource),{method:'DELETE',body:'{}'});toast('News source deleted.');await loadData();}}catch(err){toast(err.message);}});
 $('#sourceForm').addEventListener('submit',async e=>{e.preventDefault();const b=e.currentTarget.querySelector('button[type=submit]');b.disabled=true;$('#sourceMessage').textContent='';try{await api('/api/admin',{method:'POST',body:JSON.stringify(Object.fromEntries(new FormData(e.currentTarget)))});e.currentTarget.reset();$('#sourceMessage').textContent='News source added successfully.';await loadData();go('sources');}catch(err){$('#sourceMessage').textContent=err.message;}finally{b.disabled=false;}});
 $('#openSourceForm').addEventListener('click',()=>$('#sourceFormPanel').scrollIntoView({behavior:'smooth'}));
+$('#passwordForm').addEventListener('submit',async e=>{
+ e.preventDefault();
+ const form=e.currentTarget,button=form.querySelector('button[type=submit]');
+ const message=$('#passwordMessage');button.disabled=true;message.textContent='';
+ const values=Object.fromEntries(new FormData(form));
+ try{
+  await api('/api/admin?password=1',{method:'POST',body:JSON.stringify(values)});
+  form.reset();message.textContent='ፓስወርዱ በተሳካ ሁኔታ ተቀይሯል።';toast('የአድሚን ፓስወርድ ተቀይሯል።');
+ }catch(error){message.textContent=error.message;toast(error.message);}
+ finally{button.disabled=false;}
+});
 $('#profileForm').addEventListener('submit',async e=>{e.preventDefault();const b=e.currentTarget.querySelector('button[type=submit]');b.disabled=true;$('#profileMessage').textContent='Saving…';try{await api('/api/admin?profile=1',{method:'POST',body:JSON.stringify(Object.fromEntries(new FormData(e.currentTarget)))});$('#profileMessage').textContent='Website settings saved.';toast('Settings saved.');await loadData();}catch(err){$('#profileMessage').textContent=err.message;}finally{b.disabled=false;}});
 loadData();
