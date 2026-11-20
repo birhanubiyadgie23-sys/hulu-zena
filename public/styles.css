@@ -254,3 +254,10 @@ body{background:#f8f9fa;color:#111827}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 
 :root{--site-primary:#102b46;--site-accent:#d6a94a}.hero{background-color:var(--site-primary)}.masthead-brand .site-logo-image{max-width:92px;max-height:72px;object-fit:contain;margin-right:12px}.footer-brand .site-logo-image{width:52px;height:52px;object-fit:contain}.nav{border-color:var(--site-primary)}.nav button.active,.hero-cta{background:var(--site-primary)}.hero em,.eyebrow,.breaking-label{color:var(--site-accent)}
+
+
+/* News cards: collapsed two-line preview with inline expansion */
+.news-card .news-summary{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.news-card.summary-expanded .news-summary{-webkit-line-clamp:unset;display:block;overflow:visible}
+.summary-toggle{display:inline-block;margin-top:5px;padding:0;border:0;background:transparent;color:#987337;font:700 10px 'Noto Sans Ethiopic',sans-serif;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.summary-toggle:hover{color:#0b192c}
