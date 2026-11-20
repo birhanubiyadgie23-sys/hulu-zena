@@ -76,10 +76,9 @@ const schemaStatements = [
 
 async function initializeSchema(db) {
   // Create independent tables together, then indexes, then seed sources.
-  await Promise.all([0, 1, 5, 6, 7].map((index) => db.unsafe(schemaStatements[index])));
-  await Promise.all([2, 3, 4].map((index) => db.unsafe(schemaStatements[index])));
-  await Promise.all([9, 10].map((index) => db.unsafe(schemaStatements[index])));
-  await db.unsafe(schemaStatements[8]);
+  await Promise.all([0, 1, 7, 8, 9].map((index) => db.unsafe(schemaStatements[index])));
+  await Promise.all([2, 3, 4, 5, 6].map((index) => db.unsafe(schemaStatements[index])));
+  await db.unsafe(schemaStatements[10]);
 }
 
 function getClient() {
