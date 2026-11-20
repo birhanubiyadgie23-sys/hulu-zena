@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS news_articles (
   source_id BIGINT REFERENCES news_sources(id) ON DELETE SET NULL,
   title TEXT NOT NULL,
   summary TEXT NOT NULL DEFAULT '',
+  source_content TEXT NOT NULL DEFAULT '',
+  summary_status TEXT NOT NULL DEFAULT 'pending',
   original_url TEXT NOT NULL UNIQUE,
   image_url TEXT,
   category TEXT NOT NULL DEFAULT 'ethiopia',
