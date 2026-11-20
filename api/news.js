@@ -1,5 +1,5 @@
 import Parser from 'rss-parser';
-import { rawSqlClient } from './_lib/db.js';
+import { sqlClient } from './_lib/db.js';
 import { send, method } from './_lib/http.js';
 import { getImageUrl, getCategory } from './_lib/news-utils.js';
 
@@ -121,7 +121,7 @@ export default async function handler(req, res) {
   // Prefer stored stories so successfully imported articles remain visible for ten days.
   if (process.env.DATABASE_URL) {
     try {
-      const sql = rawSqlClient();
+      const sql = sqlClient();
       if (req.query?.id) {
         const id = Number(req.query.id);
         if (!Number.isSafeInteger(id) || id < 1) return send(res, 400, { ok: false, error: 'Invalid article id' });
@@ -130,7 +130,7 @@ export default async function handler(req, res) {
         const related = await sql`SELECT id, title, image_url, category, published_at FROM news_articles WHERE is_published = TRUE AND category = ${rows[0].category} AND id <> ${id} ORDER BY published_at DESC LIMIT 4`;
         return sendCached(res, { ok: true, article: rows[0], related }, 's-maxage=60, stale-while-revalidate=60');
       }
-      const rows = await sql`SELECT a.id, a.title, a.summary, a.original_url, a.image_url, a.category, a.language, a.published_at, a.fetched_at, s.name AS source_name FROM news_articles a LEFT JOIN news_sources s ON s.id = a.source_id WHERE a.is_published = TRUE AND (${category} = 'all' OR a.category = ${category}) AND (${language} = 'all' OR a.language = ${language}) AND COALESCE(a.published_at, a.fetched_at) >= NOW() - INTERVAL '10 days' ORDER BY COALESCE(a.published_at, a.fetched_at) DESC LIMIT ${limit}`;
+      const rows = await sql`SELECT a.id, a.title, a.summary, a.summary_status, a.original_url, a.image_url, a.category, a.language, a.published_at, a.fetched_at, s.name AS source_name FROM news_articles a LEFT JOIN news_sources s ON s.id = a.source_id WHERE a.is_published = TRUE AND (${category} = 'all' OR a.category = ${category}) AND (${language} = 'all' OR a.language = ${language}) AND COALESCE(a.published_at, a.fetched_at) >= NOW() - INTERVAL '10 days' ORDER BY COALESCE(a.published_at, a.fetched_at) DESC LIMIT ${limit}`;
       return sendCached(res, { ok: true, articles: rows, mode: 'database' }, 's-maxage=60, stale-while-revalidate=60');
     } catch (error) {
       console.error('[api/news] Database read failed:', error?.message || error);
