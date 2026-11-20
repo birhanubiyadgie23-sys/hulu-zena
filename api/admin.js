@@ -109,9 +109,9 @@ export default async function handler(req, res) {
       return send(res, 200, { ok: true, categories });
     }
     if (req.method === 'POST' && req.query?.profile === '1') {
-      const fields = ['about_am', 'about_en', 'facebook', 'telegram', 'youtube', 'instagram', 'tiktok', 'contact_email', 'welcome_am', 'welcome_en', 'site_name', 'logo_url', 'hero_bg_url', 'primary_color', 'accent_color'];
+      const fields = ['about_am', 'about_en', 'facebook', 'telegram', 'youtube', 'instagram', 'tiktok', 'contact_email', 'welcome_am', 'welcome_en', 'admin_welcome', 'site_name', 'logo_url', 'hero_bg_url', 'admin_bg_url', 'primary_color', 'accent_color'];
       for (const field of fields) {
-        const value = cleanText(body[field], ['about_am','about_en','welcome_am','welcome_en'].includes(field) ? 2000 : (['logo_url','hero_bg_url'].includes(field) ? 1800000 : 300));
+        const value = cleanText(body[field], ['about_am','about_en','welcome_am','welcome_en'].includes(field) ? 2000 : (['logo_url','hero_bg_url','admin_bg_url'].includes(field) ? 1800000 : 300));
         if (['logo_url','hero_bg_url'].includes(field) && value && !/^(https:\/\/|data:image\/(png|jpeg|webp|svg\+xml);base64,)/i.test(value)) return send(res, 400, { ok: false, error: 'Image must be HTTPS or a supported image file.' });
         if (['primary_color','accent_color'].includes(field) && value && !/^#[0-9a-fA-F]{6}$/.test(value)) return send(res, 400, { ok: false, error: 'Please use a valid color.' });
         if (['facebook','telegram','youtube','instagram','tiktok'].includes(field) && value) {
