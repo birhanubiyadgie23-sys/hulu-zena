@@ -35,6 +35,10 @@
   ],
   "rewrites": [
     {
+      "source": "/admin-dashboard",
+      "destination": "/admin.html"
+    },
+    {
       "source": "/sitemap.xml",
       "destination": "/api/sitemap"
     }
